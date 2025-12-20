@@ -4,10 +4,10 @@ plugins {
 }
 
 // Extract version from EveMinerAnalyzer.java
-def versionPattern = /VERSION = "([^"]+)"/
 def versionFile = file('src/main/java/app/EveMinerAnalyzer.java')
-def versionMatcher = versionFile.text =~ versionPattern
-version = versionMatcher ? versionMatcher[0][1] : '1.0.0'
+def versionText = versionFile.text
+def versionMatcher = versionText =~ /VERSION\s*=\s*"([^"]+)"/
+version = versionMatcher.find() ? versionMatcher.group(1) : '1.0.0'
 
 group = 'com.github.MrWildGear'
 def repoOwner = 'MrWildGear'

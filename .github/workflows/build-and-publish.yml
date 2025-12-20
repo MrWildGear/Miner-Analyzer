@@ -21,7 +21,11 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: 'gradle'
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '8.5'
       
       - name: Extract version
         id: version
@@ -30,21 +34,16 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Extracted version: $VERSION"
       
-      - name: Setup Gradle
-        uses: gradle/gradle-build-action@v2
-        with:
-          gradle-version: '8.5'
-      
-      - name: Grant execute permission for Gradle wrapper
+      - name: Make gradlew executable
         if: hashFiles('gradlew') != ''
         run: chmod +x gradlew
       
       - name: Build with Gradle
         run: |
           if [ -f ./gradlew ]; then
-            ./gradlew build
+            ./gradlew build --no-daemon
           else
-            gradle build
+            gradle build --no-daemon
           fi
       
       - name: Publish to GitHub Packages
@@ -52,9 +51,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if [ -f ./gradlew ]; then
-            ./gradlew publish
+            ./gradlew publish --no-daemon
           else
-            gradle publish
+            gradle publish --no-daemon
           fi
       
       - name: Upload JAR artifact
