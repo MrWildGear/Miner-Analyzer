@@ -32,7 +32,7 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.7";
+    private static final String VERSION = "1.2.8";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
 
     // UI Components
@@ -194,9 +194,11 @@ public class EveMinerAnalyzer extends JFrame {
         resultsText.setBackground(themeManager.getFrameBg());
         resultsText.setForeground(themeManager.getFgColor());
         resultsText.setFont(new Font("Consolas", Font.PLAIN, 10));
+        resultsText.setCaretColor(themeManager.getFgColor()); // Ensure caret is visible
         doc = resultsText.getStyledDocument();
 
         // Set up default style for the document to ensure correct text color
+        // Also set the logical style to use the correct foreground color
         try {
             javax.swing.text.Style defaultStyle = doc.getStyle("default");
             if (defaultStyle == null) {
@@ -205,8 +207,9 @@ public class EveMinerAnalyzer extends JFrame {
             if (defaultStyle != null) {
                 javax.swing.text.StyleConstants.setForeground(defaultStyle,
                         themeManager.getFgColor());
-                doc.setLogicalStyle(0, defaultStyle);
             }
+            // Set logical style for the entire document
+            doc.setLogicalStyle(0, defaultStyle);
         } catch (Exception e) {
             // Ignore style setup errors
         }
@@ -279,6 +282,7 @@ public class EveMinerAnalyzer extends JFrame {
             if (resultsText != null) {
                 resultsText.setBackground(themeManager.getFrameBg());
                 resultsText.setForeground(themeManager.getFgColor());
+                resultsText.setCaretColor(themeManager.getFgColor()); // Update caret color
                 // Set logical style to ensure default text color is correct
                 try {
                     javax.swing.text.Style style =
