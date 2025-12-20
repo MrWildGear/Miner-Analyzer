@@ -2,11 +2,15 @@
 
 A GUI application (available in both Python and Java) that analyzes EVE Online Strip Miner rolls by monitoring your clipboard. Supports both ORE Strip Miner and Modulated Strip Miner II.
 
-## 🚀 Quick Start - Single File Distribution
+## 🚀 Quick Start
 
-**Want to share with others?** See [SHARING_INSTRUCTIONS.md](SHARING_INSTRUCTIONS.md) for how to create a single executable file that doesn't require Java!
+**Easiest Way:** Double-click `scripts\EVE Miner Analyzer.bat` in the root folder!
 
-**Quick option:** Navigate to `java` folder and run `create_executable.bat` to create a standalone `.exe` file.
+It will automatically:
+- Build the JAR if needed (first time only)
+- Launch the application
+
+**Want to create a standalone executable?** Navigate to `scripts\java` folder and run `create_executable.bat` to create a standalone `.exe` file that doesn't require Java.
 
 ## Features
 
@@ -23,19 +27,26 @@ A GUI application (available in both Python and Java) that analyzes EVE Online S
 
 ```
 Rolled Mods/
-├── python/              # Python version
-│   ├── eve_miner_analyzer.py
-│   └── requirements.txt
-├── powershell/          # PowerShell scripts
-│   ├── rolled Ore Strip miner.ps1
-│   ├── roll_analyer_modulated.ps1
-│   ├── roll_analyzer_modulated_realworld.ps1
-│   └── mutaplasmid_odds_calculator.ps1
-├── java/                # Java version
-│   ├── EveMinerAnalyzer.java
-│   ├── build.bat / build.sh
-│   ├── run.bat / run.sh
-│   └── compile_and_run.bat / compile_and_run.sh
+├── src/
+│   └── main/
+│       └── java/
+│           └── EveMinerAnalyzer.java    # Java source code
+├── scripts/
+│   ├── EVE Miner Analyzer.bat           # Main launcher (double-click to run)
+│   ├── java/
+│   │   ├── build.bat                    # Build script
+│   │   ├── create_executable.bat        # Create native .exe
+│   │   └── MANIFEST.MF                  # JAR manifest
+│   └── powershell/                      # PowerShell scripts
+│       ├── rolled Ore Strip miner.ps1
+│       ├── roll_analyer_modulated.ps1
+│       ├── roll_analyzer_modulated_realworld.ps1
+│       └── mutaplasmid_odds_calculator.ps1
+├── target/                              # Build outputs (generated)
+│   ├── build/                           # Compiled classes
+│   └── *.jar                            # JAR files
+├── .gitignore                           # Git ignore rules
+├── LICENSE
 └── README.md
 ```
 
@@ -53,9 +64,9 @@ Rolled Mods/
 
 ### Java Version
 
-1. Navigate to the `java` folder
-2. Install Java 8 or higher (JDK recommended)
-3. No additional dependencies required - uses built-in Java libraries
+1. Install Java 8 or higher (JDK recommended)
+2. No additional dependencies required - uses built-in Java libraries
+3. The project follows standard Maven/Gradle directory structure (`src/main/java/`)
 
 ## Usage
 
@@ -73,40 +84,38 @@ Rolled Mods/
 
 ### Java Version
 
-**Easiest Way:** **Double-click `EVE Miner Analyzer.bat`** in the root folder!
+**Easiest Way:** **Double-click `scripts\EVE Miner Analyzer.bat`** in the root folder!
 
 It will automatically:
 - Build the JAR if needed (first time only)
 - Launch the application
 
-Or navigate to the `java` folder for manual control:
-```bash
-cd java
-```
-
-Then:
+**Manual Build and Run:**
 
 1. **Build the JAR:**
    ```bash
+   cd scripts\java
    build.bat
    ```
+   The JAR will be created in the `target\` directory.
 
 2. **Run the JAR:**
    ```bash
-   java -jar EveMinerAnalyzer.jar
+   java -jar ..\..\target\EveMinerAnalyzer-*.jar
    ```
 
 3. **Create native executable (optional):**
    ```bash
+   cd scripts\java
    create_executable.bat
    ```
-   This creates a standalone `.exe` that doesn't require Java.
+   This creates a standalone `.exe` in `target\dist\` that doesn't require Java.
 
 ### PowerShell Version
 
-1. Navigate to the `powershell` folder:
+1. Navigate to the `scripts\powershell` folder:
    ```powershell
-   cd powershell
+   cd scripts\powershell
    ```
 
 2. Run the desired script:

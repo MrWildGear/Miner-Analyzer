@@ -1,36 +1,31 @@
-# Build artifacts
+# Build outputs
+target/
+build/
 *.class
 *.jar
 *.exe
-*.tmp
-build/
 dist/
 
 # IDE files
 .idea/
 .vscode/
 *.iml
-*.swp
-*.swo
-*~
+*.ipr
+*.iws
+.classpath
+.project
+.settings/
+bin/
+out/
 
 # OS files
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# Python
-__pycache__/
-*.py[cod]
-*$py.class
-*.so
-.Python
-env/
-venv/
-ENV/
-.venv
-
-# Java
+# Temporary files
+*.tmp
 *.log
-*.cache
-
+*.swp
+*~
+temp_manifest.mf
