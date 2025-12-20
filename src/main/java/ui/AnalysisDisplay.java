@@ -32,6 +32,38 @@ public class AnalysisDisplay {
         this.tierColors.clear();
         this.tierColors.putAll(tierColors);
         setupTextStyles();
+        // Update existing text colors in the document
+        updateExistingTextColors();
+    }
+    
+    private void updateExistingTextColors() {
+        if (doc == null) {
+            return;
+        }
+        try {
+            int length = doc.getLength();
+            if (length == 0) {
+                return;
+            }
+            
+            // Update character attributes for text that uses default/plain styling
+            // This will update the foreground color for text inserted with appendText()
+            // Special styled text (tier colors, good/bad) uses named styles which are updated in setupTextStyles()
+            javax.swing.text.SimpleAttributeSet newAttr = new javax.swing.text.SimpleAttributeSet();
+            StyleConstants.setForeground(newAttr, fgColor);
+            
+            // Apply to the entire document - this updates the foreground color attribute
+            // The 'false' parameter merges attributes rather than replacing all attributes
+            doc.setCharacterAttributes(0, length, newAttr, false);
+            
+            // Also update the logical style to ensure new text uses the correct color
+            Style logicalStyle = doc.getLogicalStyle(0);
+            if (logicalStyle != null) {
+                StyleConstants.setForeground(logicalStyle, fgColor);
+            }
+        } catch (Exception e) {
+            // Ignore errors during text color update
+        }
     }
     
     private void setupTextStyles() {
@@ -408,17 +440,31 @@ public class AnalysisDisplay {
     }
     
     public void appendText(String text, Color color) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
         try {
-            // Create a new attribute set with the specified color
-            // Use MutableAttributeSet to ensure the color is applied
-            javax.swing.text.MutableAttributeSet attr = new javax.swing.text.SimpleAttributeSet();
-            StyleConstants.setForeground(attr, color);
+            // Ensure we have a valid color - use fgColor as fallback if color is null or invalid
+            Color textColor = color;
+            if (textColor == null || (textColor.getRed() == textColor.getGreen() && textColor.getGreen() == textColor.getBlue() && textColor.getRed() > 200)) {
+                // If color is null or too light (close to white), use fgColor
+                textColor = fgColor;
+            }
+            
+            // Create a completely fresh attribute set with ONLY the foreground color
+            // This ensures no inheritance from parent styles
+            javax.swing.text.SimpleAttributeSet attr = new javax.swing.text.SimpleAttributeSet();
+            StyleConstants.setForeground(attr, textColor);
+            // Explicitly set other attributes to avoid inheritance issues
+            StyleConstants.setBold(attr, false);
+            StyleConstants.setItalic(attr, false);
+            
             doc.insertString(doc.getLength(), text, attr);
         } catch (BadLocationException e) {
             e.printStackTrace();
         } catch (Exception e) {
             e.printStackTrace();
-            // Fallback: try inserting without style (uses component's default foreground)
+            // Last resort fallback - insert with no attributes and hope component's foreground works
             try {
                 doc.insertString(doc.getLength(), text, null);
             } catch (BadLocationException ex) {
