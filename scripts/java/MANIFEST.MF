@@ -1,4 +1,4 @@
 Manifest-Version: 1.0
-Main-Class: EveMinerAnalyzer
+Main-Class: app.EveMinerAnalyzer
 Created-By: EVE Miner Analyzer Build Script
 

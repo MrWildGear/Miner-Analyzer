@@ -37,13 +37,13 @@ if %errorlevel% neq 0 (
 )
 
 REM Check if src folder exists at root
-if exist "src\main\java\EveMinerAnalyzer.java" (
+if exist "src\main\java\app\EveMinerAnalyzer.java" (
     set "JAVA_DIR=%LAUNCHER_DIR%"
     cd /d "%JAVA_DIR%"
 ) else (
     echo.
     echo ========================================
-    echo ERROR: Cannot find EveMinerAnalyzer.java
+    echo ERROR: Cannot find app\EveMinerAnalyzer.java
     echo ========================================
     echo.
     echo Please ensure this launcher is in the root folder.
@@ -55,7 +55,7 @@ if exist "src\main\java\EveMinerAnalyzer.java" (
 REM Extract version from Java file
 setlocal enabledelayedexpansion
 set "VERSION=unknown"
-for /f "tokens=7" %%a in ('findstr /C:"VERSION = " "%JAVA_DIR%\src\main\java\EveMinerAnalyzer.java"') do (
+    for /f "tokens=7" %%a in ('findstr /C:"VERSION = " "%JAVA_DIR%\src\main\java\app\EveMinerAnalyzer.java"') do (
     set "VER_TEMP=%%a"
     REM Remove quotes and semicolon
     set "VERSION=!VER_TEMP:"=!"
@@ -87,7 +87,7 @@ if not exist "%JAR_FILE%" (
     
     REM Compile
     echo Compiling...
-    javac -d build "%JAVA_DIR%\src\main\java\EveMinerAnalyzer.java"
+    javac -d build "%JAVA_DIR%\src\main\java\app\EveMinerAnalyzer.java"
     if %errorlevel% neq 0 (
         echo.
         echo Compilation failed!
@@ -105,7 +105,7 @@ if not exist "%JAR_FILE%" (
     ) else (
         REM Create minimal manifest if it doesn't exist
         echo Manifest-Version: 1.0 > "%JAVA_DIR%\temp_manifest.mf"
-        echo Main-Class: EveMinerAnalyzer >> "%JAVA_DIR%\temp_manifest.mf"
+        echo Main-Class: app.EveMinerAnalyzer >> "%JAVA_DIR%\temp_manifest.mf"
         jar cfm "%BUILD_JAR_FILE%" "%JAVA_DIR%\temp_manifest.mf" *
         del "%JAVA_DIR%\temp_manifest.mf"
     )
