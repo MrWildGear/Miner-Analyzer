@@ -1,0 +1,36 @@
+# Build artifacts
+*.class
+*.jar
+*.exe
+*.tmp
+build/
+dist/
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# Java
+*.log
+*.cache
+
