@@ -26,7 +26,7 @@ public class ThemeManager {
     public ThemeManager() {
         try {
             detectSystemTheme();
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // If theme detection fails, use default light theme
             isDarkMode = false;
             applyTheme();
@@ -37,7 +37,7 @@ public class ThemeManager {
         // Try to detect system theme
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Use default if detection fails
         }
 
@@ -63,15 +63,15 @@ public class ThemeManager {
         try {
             // Try Java 8+ method first
             return process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (InterruptedException _) {
+        } catch (InterruptedException ignored) {
             Thread.currentThread().interrupt();
             return false;
-        } catch (NoSuchMethodError _) {
+        } catch (NoSuchMethodError ignored) {
             // Fallback for Java 7: use simple waitFor with thread interrupt
             Thread waitThread = new Thread(() -> {
                 try {
                     process.waitFor();
-                } catch (InterruptedException _) {
+                } catch (InterruptedException ignored1) {
                     Thread.currentThread().interrupt();
                 }
             });
@@ -80,7 +80,7 @@ public class ThemeManager {
                 waitThread.join((long) timeoutSeconds * 1000); // Wait max timeoutSeconds
                                                                // milliseconds
                 return !waitThread.isAlive();
-            } catch (InterruptedException _) {
+            } catch (InterruptedException ignored2) {
                 waitThread.interrupt();
                 Thread.currentThread().interrupt();
                 return false;
@@ -127,7 +127,7 @@ public class ThemeManager {
             }
 
             return parseRegistryOutput(process);
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Registry read failed, try other methods
             return Optional.empty();
         }
@@ -136,7 +136,7 @@ public class ThemeManager {
     private void destroyProcess(Process process) {
         try {
             process.destroy();
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore destroy errors
         }
     }
@@ -153,7 +153,7 @@ public class ThemeManager {
                 }
             }
             return Optional.of(false);
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             return Optional.empty();
         }
     }
@@ -169,7 +169,7 @@ public class ThemeManager {
                 return Optional.of(brightness < 0.5);
             }
             return Optional.of(false);
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Color check failed
             return Optional.empty();
         }
@@ -179,7 +179,7 @@ public class ThemeManager {
         try {
             String theme = System.getProperty("swing.systemTheme");
             return Optional.of(theme != null && theme.toLowerCase().contains("dark"));
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Property check failed
             return Optional.empty();
         }
@@ -263,7 +263,7 @@ public class ThemeManager {
                 UIManager.put("MenuItem.selectionBackground", new Color(200, 200, 200));
                 UIManager.put("MenuItem.selectionForeground", Color.BLACK);
             }
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore UIManager errors
         }
     }

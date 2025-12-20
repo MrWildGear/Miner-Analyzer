@@ -35,7 +35,7 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.17";
+    private static final String VERSION = "1.2.18";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
 
@@ -214,7 +214,7 @@ public class EveMinerAnalyzer extends JFrame {
             }
             // Set logical style for the entire document
             doc.setLogicalStyle(0, defaultStyle);
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore style setup errors
         }
 
@@ -312,7 +312,7 @@ public class EveMinerAnalyzer extends JFrame {
                 javax.swing.text.StyleConstants.setForeground(style, themeManager.getFgColor());
                 resultsText.getStyledDocument().setLogicalStyle(0, style);
             }
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore style errors
         }
     }
@@ -443,7 +443,7 @@ public class EveMinerAnalyzer extends JFrame {
                 String timeStr = java.time.LocalTime.now().toString();
                 String timestamp = timeStr.length() >= 8 ? timeStr.substring(0, 8) : timeStr;
                 statusLabel.setText(message + " - " + timestamp);
-            } catch (Exception _) {
+            } catch (Exception ignored) {
                 // Fallback if timestamp formatting fails
                 statusLabel.setText(message);
             }
@@ -482,7 +482,7 @@ public class EveMinerAnalyzer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception _) {
+            } catch (Exception ignored) {
                 // Use default LAF
             }
 

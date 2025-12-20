@@ -100,7 +100,7 @@ public class ItemStatsParser {
                 double statValue = getStatValue(statName, numValue);
                 stats.put(statName, statValue);
             }
-        } catch (NumberFormatException _) {
+        } catch (NumberFormatException ignored) {
             // Skip lines that can't be parsed - this is normal
         }
     }

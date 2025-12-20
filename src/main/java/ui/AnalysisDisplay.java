@@ -89,7 +89,7 @@ public class AnalysisDisplay {
             if (logicalStyle != null) {
                 StyleConstants.setForeground(logicalStyle, fgColor);
             }
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore errors during text color update
         }
     }
@@ -109,7 +109,7 @@ public class AnalysisDisplay {
             setupTierStyles();
             setupGoodBadStyles();
             setupHeaderStyle();
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Silently handle style errors - don't break the app
         }
     }
@@ -123,7 +123,7 @@ public class AnalysisDisplay {
             if (defaultStyle != null) {
                 StyleConstants.setForeground(defaultStyle, fgColor);
             }
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore default style setup errors
         }
     }
@@ -427,7 +427,7 @@ public class AnalysisDisplay {
             java.awt.datatransfer.Clipboard clipboard =
                     Toolkit.getDefaultToolkit().getSystemClipboard();
             clipboard.setContents(selection, null);
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Ignore clipboard errors
         }
     }

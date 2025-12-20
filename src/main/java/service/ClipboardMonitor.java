@@ -77,7 +77,7 @@ public class ClipboardMonitor {
             if (clipboardText != null && !clipboardText.isEmpty()) {
                 processClipboardText(clipboardText);
             }
-        } catch (HeadlessException _) {
+        } catch (HeadlessException ignored) {
             // Running in headless environment - can't access GUI
         } catch (Exception e) {
             handleClipboardError(e);
@@ -93,10 +93,10 @@ public class ClipboardMonitor {
     private Transferable getClipboardContents(Clipboard clipboard) {
         try {
             return clipboard.getContents(null);
-        } catch (IllegalStateException _) {
+        } catch (IllegalStateException ignored) {
             // Clipboard is locked by another application
             return null;
-        } catch (SecurityException _) {
+        } catch (SecurityException ignored) {
             // Security exception - can't access clipboard
             updateStatusOnEDT("Clipboard access denied - check permissions");
             return null;
@@ -112,7 +112,7 @@ public class ClipboardMonitor {
     private String getClipboardText(Transferable contents) {
         try {
             return (String) contents.getTransferData(DataFlavor.stringFlavor);
-        } catch (UnsupportedFlavorException | java.io.IOException _) {
+        } catch (UnsupportedFlavorException | java.io.IOException ignored) {
             // Clipboard doesn't contain text or IO error - this is normal, ignore
             return null;
         }
@@ -187,9 +187,9 @@ public class ClipboardMonitor {
             }
         } catch (IllegalArgumentException e) {
             updateStatusOnEDT("Calculation error: " + e.getMessage());
-        } catch (NullPointerException _) {
+        } catch (NullPointerException ignored) {
             updateStatusOnEDT("Error: Missing data");
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             updateStatusOnEDT("Error during analysis");
         }
     }
