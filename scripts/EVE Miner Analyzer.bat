@@ -36,11 +36,11 @@ if %errorlevel% neq 0 (
 )
 
 REM Check if source file exists
-set "SOURCE_FILE=%PROJECT_ROOT%\src\main\java\EveMinerAnalyzer.java"
+set "SOURCE_FILE=%PROJECT_ROOT%\src\main\java\app\EveMinerAnalyzer.java"
 if not exist "%SOURCE_FILE%" (
     echo.
     echo ========================================
-    echo ERROR: Cannot find EveMinerAnalyzer.java
+    echo ERROR: Cannot find app\EveMinerAnalyzer.java
     echo ========================================
     echo.
     echo Expected location: %SOURCE_FILE%

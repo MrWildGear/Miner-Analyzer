@@ -1,3 +1,5 @@
+package app;
+
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.Container;
@@ -19,6 +21,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
+import javax.swing.WindowConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 import service.ClipboardMonitor;
@@ -32,28 +35,29 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.8";
+    private static final String VERSION = "1.2.17";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
+    private static final String DEFAULT_STYLE_NAME = "default";
 
     // UI Components
     private JRadioButton oreRadio;
     private JRadioButton modulatedRadio;
     private JLabel statusLabel;
     private JTextPane resultsText;
-    private StyledDocument doc;
+    private transient StyledDocument doc;
 
     private String minerType = "ORE";
-    private ClipboardMonitor clipboardMonitor;
+    private transient ClipboardMonitor clipboardMonitor;
 
     // Theme management
-    private ThemeManager themeManager;
-    private AnalysisDisplay analysisDisplay;
+    private transient ThemeManager themeManager;
+    private transient AnalysisDisplay analysisDisplay;
 
     // UI Components for theme updates
     private JPanel mainPanel;
     private JPanel headerPanel;
     private JPanel typePanel;
-    private JMenuBar menuBar;
+    private JMenuBar appMenuBar;
 
     public EveMinerAnalyzer() {
         themeManager = new ThemeManager();
@@ -74,12 +78,12 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void initializeUI() {
         setTitle(APP_NAME + " v" + VERSION);
-        setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setSize(900, 700);
         setLocationRelativeTo(null);
 
         // Add menu bar with Theme and Help menus
-        menuBar = new JMenuBar();
+        appMenuBar = new JMenuBar();
 
         // Theme menu
         JMenu themeMenu = new JMenu("Theme");
@@ -114,21 +118,21 @@ public class EveMinerAnalyzer extends JFrame {
         });
         themeMenu.add(darkThemeItem);
 
-        menuBar.add(themeMenu);
+        appMenuBar.add(themeMenu);
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
         JMenuItem aboutItem = new JMenuItem("About");
         aboutItem.addActionListener(e -> showAboutDialog());
         helpMenu.add(aboutItem);
-        menuBar.add(helpMenu);
+        appMenuBar.add(helpMenu);
 
         // Style all menu items initially
-        updateMenuBarColors(menuBar);
+        updateMenuBarColors(appMenuBar);
 
-        setJMenuBar(menuBar);
-        menuBar.setBackground(themeManager.getMenuBgColor());
-        menuBar.setForeground(themeManager.getMenuFgColor());
+        setJMenuBar(appMenuBar);
+        appMenuBar.setBackground(themeManager.getMenuBgColor());
+        appMenuBar.setForeground(themeManager.getMenuFgColor());
 
         // Main panel
         mainPanel = new JPanel(new BorderLayout());
@@ -141,7 +145,7 @@ public class EveMinerAnalyzer extends JFrame {
                 BorderFactory.createLineBorder(themeManager.getBorderColor(), 1),
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
-        JLabel titleLabel = new JLabel("EVE Online Strip Miner Roll Analyzer");
+        JLabel titleLabel = new JLabel(APP_NAME);
         titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
         titleLabel.setForeground(themeManager.getFgColor());
         headerPanel.add(titleLabel, BorderLayout.NORTH);
@@ -200,9 +204,9 @@ public class EveMinerAnalyzer extends JFrame {
         // Set up default style for the document to ensure correct text color
         // Also set the logical style to use the correct foreground color
         try {
-            javax.swing.text.Style defaultStyle = doc.getStyle("default");
+            javax.swing.text.Style defaultStyle = doc.getStyle(DEFAULT_STYLE_NAME);
             if (defaultStyle == null) {
-                defaultStyle = doc.addStyle("default", null);
+                defaultStyle = doc.addStyle(DEFAULT_STYLE_NAME, null);
             }
             if (defaultStyle != null) {
                 javax.swing.text.StyleConstants.setForeground(defaultStyle,
@@ -210,7 +214,7 @@ public class EveMinerAnalyzer extends JFrame {
             }
             // Set logical style for the entire document
             doc.setLogicalStyle(0, defaultStyle);
-        } catch (Exception e) {
+        } catch (Exception _) {
             // Ignore style setup errors
         }
 
@@ -235,92 +239,103 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void updateUITheme() {
         SwingUtilities.invokeLater(() -> {
-            // Update menu bar
-            if (menuBar != null) {
-                menuBar.setBackground(themeManager.getMenuBgColor());
-                menuBar.setForeground(themeManager.getMenuFgColor());
-                updateMenuBarColors(menuBar);
-            }
-
-            // Update main panel
-            if (mainPanel != null) {
-                mainPanel.setBackground(themeManager.getBgColor());
-            }
-
-            // Update header panel
-            if (headerPanel != null) {
-                headerPanel.setBackground(themeManager.getHeaderBgColor());
-                headerPanel.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createLineBorder(themeManager.getBorderColor(), 1),
-                        BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-            }
-
-            // Update type panel
-            if (typePanel != null) {
-                typePanel.setBackground(themeManager.getBgColor());
-            }
-
-            // Update labels and nested components
+            updateMenuBarTheme();
+            updatePanelsTheme();
             updateComponentTheme(getContentPane());
-
-            // Update radio buttons
-            if (oreRadio != null) {
-                oreRadio.setBackground(themeManager.getBgColor());
-                oreRadio.setForeground(themeManager.getFgColor());
-            }
-            if (modulatedRadio != null) {
-                modulatedRadio.setBackground(themeManager.getBgColor());
-                modulatedRadio.setForeground(themeManager.getFgColor());
-            }
-
-            // Update status label
-            if (statusLabel != null) {
-                statusLabel.setForeground(themeManager.getFgColor());
-            }
-
-            // Update text pane
-            if (resultsText != null) {
-                resultsText.setBackground(themeManager.getFrameBg());
-                resultsText.setForeground(themeManager.getFgColor());
-                resultsText.setCaretColor(themeManager.getFgColor()); // Update caret color
-                // Set logical style to ensure default text color is correct
-                try {
-                    javax.swing.text.Style style =
-                            resultsText.getStyledDocument().getStyle("default");
-                    if (style == null) {
-                        style = resultsText.getStyledDocument().addStyle("default", null);
-                    }
-                    if (style != null) {
-                        javax.swing.text.StyleConstants.setForeground(style,
-                                themeManager.getFgColor());
-                        resultsText.getStyledDocument().setLogicalStyle(0, style);
-                    }
-                } catch (Exception e) {
-                    // Ignore style errors
-                }
-            }
-
-            // Update scroll pane border
-            Component[] components = mainPanel.getComponents();
-            for (Component comp : components) {
-                if (comp instanceof JScrollPane) {
-                    JScrollPane scrollPane = (JScrollPane) comp;
-                    scrollPane.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(themeManager.getBorderColor(), 1),
-                            BorderFactory.createEmptyBorder(10, 10, 10, 10)));
-                    scrollPane.getViewport().setBackground(themeManager.getFrameBg());
-                }
-            }
-
-            // Update analysis display theme
-            if (analysisDisplay != null) {
-                analysisDisplay.updateTheme(themeManager.getFgColor(),
-                        themeManager.getTierColors());
-            }
-
-            // Repaint
+            updateRadioButtonsTheme();
+            updateStatusLabelTheme();
+            updateTextPaneTheme();
+            updateScrollPaneTheme();
+            updateAnalysisDisplayTheme();
             repaint();
         });
+    }
+
+    private void updateMenuBarTheme() {
+        if (appMenuBar != null) {
+            appMenuBar.setBackground(themeManager.getMenuBgColor());
+            appMenuBar.setForeground(themeManager.getMenuFgColor());
+            updateMenuBarColors(appMenuBar);
+        }
+    }
+
+    private void updatePanelsTheme() {
+        if (mainPanel != null) {
+            mainPanel.setBackground(themeManager.getBgColor());
+        }
+        if (headerPanel != null) {
+            headerPanel.setBackground(themeManager.getHeaderBgColor());
+            headerPanel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(themeManager.getBorderColor(), 1),
+                    BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+        }
+        if (typePanel != null) {
+            typePanel.setBackground(themeManager.getBgColor());
+        }
+    }
+
+    private void updateRadioButtonsTheme() {
+        if (oreRadio != null) {
+            oreRadio.setBackground(themeManager.getBgColor());
+            oreRadio.setForeground(themeManager.getFgColor());
+        }
+        if (modulatedRadio != null) {
+            modulatedRadio.setBackground(themeManager.getBgColor());
+            modulatedRadio.setForeground(themeManager.getFgColor());
+        }
+    }
+
+    private void updateStatusLabelTheme() {
+        if (statusLabel != null) {
+            statusLabel.setForeground(themeManager.getFgColor());
+        }
+    }
+
+    private void updateTextPaneTheme() {
+        if (resultsText == null) {
+            return;
+        }
+        resultsText.setBackground(themeManager.getFrameBg());
+        resultsText.setForeground(themeManager.getFgColor());
+        resultsText.setCaretColor(themeManager.getFgColor());
+        updateTextPaneStyle();
+    }
+
+    private void updateTextPaneStyle() {
+        try {
+            javax.swing.text.Style style =
+                    resultsText.getStyledDocument().getStyle(DEFAULT_STYLE_NAME);
+            if (style == null) {
+                style = resultsText.getStyledDocument().addStyle(DEFAULT_STYLE_NAME, null);
+            }
+            if (style != null) {
+                javax.swing.text.StyleConstants.setForeground(style, themeManager.getFgColor());
+                resultsText.getStyledDocument().setLogicalStyle(0, style);
+            }
+        } catch (Exception _) {
+            // Ignore style errors
+        }
+    }
+
+    private void updateScrollPaneTheme() {
+        if (mainPanel == null) {
+            return;
+        }
+        Component[] components = mainPanel.getComponents();
+        for (Component comp : components) {
+            if (comp instanceof JScrollPane scrollPane) {
+                scrollPane.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createLineBorder(themeManager.getBorderColor(), 1),
+                        BorderFactory.createEmptyBorder(10, 10, 10, 10)));
+                scrollPane.getViewport().setBackground(themeManager.getFrameBg());
+            }
+        }
+    }
+
+    private void updateAnalysisDisplayTheme() {
+        if (analysisDisplay != null) {
+            analysisDisplay.updateTheme(themeManager.getFgColor(), themeManager.getTierColors());
+        }
     }
 
     private void updateMenuBarColors(JMenuBar menuBar) {
@@ -366,8 +381,7 @@ public class EveMinerAnalyzer extends JFrame {
         item.setOpaque(true);
 
         // Handle submenus recursively
-        if (item instanceof JMenu) {
-            JMenu submenu = (JMenu) item;
+        if (item instanceof JMenu submenu) {
             for (int i = 0; i < submenu.getItemCount(); i++) {
                 JMenuItem subItem = submenu.getItem(i);
                 if (subItem != null) {
@@ -386,8 +400,8 @@ public class EveMinerAnalyzer extends JFrame {
             // Style all components in the popup
             Component[] components = popup.getComponents();
             for (Component comp : components) {
-                if (comp instanceof JMenuItem) {
-                    styleMenuItem((JMenuItem) comp);
+                if (comp instanceof JMenuItem menuItem) {
+                    styleMenuItem(menuItem);
                 }
             }
         }
@@ -395,17 +409,15 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void updateComponentTheme(Container container) {
         for (Component comp : container.getComponents()) {
-            if (comp instanceof JLabel) {
-                JLabel label = (JLabel) comp;
+            if (comp instanceof JLabel label) {
                 if (label != statusLabel) { // statusLabel is handled separately
                     label.setForeground(themeManager.getFgColor());
                 }
-            } else if (comp instanceof JPanel) {
-                JPanel panel = (JPanel) comp;
+            } else if (comp instanceof JPanel panel) {
                 panel.setBackground(themeManager.getBgColor());
                 updateComponentTheme(panel);
-            } else if (comp instanceof JScrollPane) {
-                updateComponentTheme((Container) comp);
+            } else if (comp instanceof JScrollPane scrollPane) {
+                updateComponentTheme(scrollPane);
             }
         }
     }
@@ -431,7 +443,7 @@ public class EveMinerAnalyzer extends JFrame {
                 String timeStr = java.time.LocalTime.now().toString();
                 String timestamp = timeStr.length() >= 8 ? timeStr.substring(0, 8) : timeStr;
                 statusLabel.setText(message + " - " + timestamp);
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Fallback if timestamp formatting fails
                 statusLabel.setText(message);
             }
@@ -470,7 +482,7 @@ public class EveMinerAnalyzer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception e) {
+            } catch (Exception _) {
                 // Use default LAF
             }
 
@@ -478,3 +490,4 @@ public class EveMinerAnalyzer extends JFrame {
         });
     }
 }
+

@@ -28,7 +28,7 @@ REM Find the VERSION line and extract the quoted value using simple batch parsin
 setlocal enabledelayedexpansion
 set "VERSION=unknown"
 REM Look for the pattern: VERSION = "x.x.x"
-for /f "tokens=7 delims= " %%a in ('findstr /C:"VERSION = " "src\main\java\EveMinerAnalyzer.java"') do (
+for /f "tokens=7 delims= " %%a in ('findstr /C:"VERSION = " "src\main\java\app\EveMinerAnalyzer.java"') do (
     set "VER_TEMP=%%a"
     REM Remove quotes and semicolon
     set "VER_TEMP=!VER_TEMP:"=!"
@@ -46,7 +46,7 @@ if "%VERSION%"=="" (
 set "JAR_NAME=EveMinerAnalyzer-%VERSION%.jar"
 set "TARGET_DIR=%PROJECT_ROOT%\target"
 set "BUILD_DIR=%TARGET_DIR%\build"
-set "SOURCE_FILE=%PROJECT_ROOT%\src\main\java\EveMinerAnalyzer.java"
+set "SOURCE_FILE=%PROJECT_ROOT%\src\main\java\app\EveMinerAnalyzer.java"
 set "MANIFEST_FILE=%SCRIPT_DIR%MANIFEST.MF"
 
 echo Cleaning previous build...
@@ -90,7 +90,7 @@ if not exist "%MANIFEST_FILE%" (
     exit /b 1
 )
 cd "%BUILD_DIR%"
-if not exist "%BUILD_DIR%\EveMinerAnalyzer.class" (
+if not exist "%BUILD_DIR%\app\EveMinerAnalyzer.class" (
     echo ERROR: Compiled classes not found in %BUILD_DIR%
     cd "%PROJECT_ROOT%"
     if "%1" neq "silent" pause

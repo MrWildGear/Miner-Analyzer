@@ -88,7 +88,7 @@ REM Extract just the filename from the full path
 for %%F in ("%JAR_FILE%") do set "JAR_FILENAME=%%~nxF"
 echo Using JAR: %JAR_FILE%
 echo JAR Filename: %JAR_FILENAME%
-jpackage --input "%TARGET_DIR%" --name "EVE Miner Analyzer" --main-jar "%JAR_FILENAME%" --main-class EveMinerAnalyzer --type exe --dest "%DIST_DIR%" --app-version 1.0.0 --description "EVE Online Strip Miner Roll Analyzer" --vendor "EVE Miner Analyzer" --copyright "2024"
+jpackage --input "%TARGET_DIR%" --name "EVE Miner Analyzer" --main-jar "%JAR_FILENAME%" --main-class app.EveMinerAnalyzer --type exe --dest "%DIST_DIR%" --app-version 1.0.0 --description "EVE Online Strip Miner Roll Analyzer" --vendor "EVE Miner Analyzer" --copyright "2024"
 
 if errorlevel 1 (
     echo.
