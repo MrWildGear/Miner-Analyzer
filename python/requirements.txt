@@ -1,0 +1,7 @@
+# Python dependencies for EVE Miner Analyzer
+# (To be added when Python version is implemented)
+
+# Planned dependencies:
+# pyperclip>=1.8.0  # For clipboard monitoring
+
+
