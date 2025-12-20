@@ -32,7 +32,7 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.2";
+    private static final String VERSION = "1.2.3";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
 
     // UI Components
@@ -123,10 +123,12 @@ public class EveMinerAnalyzer extends JFrame {
         helpMenu.add(aboutItem);
         menuBar.add(helpMenu);
 
+        // Style all menu items initially
+        updateMenuBarColors(menuBar);
+
         setJMenuBar(menuBar);
         menuBar.setBackground(themeManager.getMenuBgColor());
         menuBar.setForeground(themeManager.getMenuFgColor());
-        updateMenuBarColors(menuBar);
 
         // Main panel
         mainPanel = new JPanel(new BorderLayout());
@@ -294,12 +296,64 @@ public class EveMinerAnalyzer extends JFrame {
                 menu.setForeground(themeManager.getMenuFgColor());
                 menu.setBackground(themeManager.getMenuBgColor());
                 menu.setOpaque(true);
+
+                // Add popup menu listener to style popup when it appears
+                menu.addMenuListener(new javax.swing.event.MenuListener() {
+                    @Override
+                    public void menuSelected(javax.swing.event.MenuEvent e) {
+                        stylePopupMenu(menu);
+                    }
+
+                    @Override
+                    public void menuDeselected(javax.swing.event.MenuEvent e) {
+                        // No action needed when menu is deselected
+                    }
+
+                    @Override
+                    public void menuCanceled(javax.swing.event.MenuEvent e) {
+                        // No action needed when menu is canceled
+                    }
+                });
+
+                // Style existing menu items
                 for (int j = 0; j < menu.getItemCount(); j++) {
                     JMenuItem item = menu.getItem(j);
                     if (item != null) {
-                        item.setForeground(themeManager.getMenuFgColor());
-                        item.setBackground(themeManager.getMenuBgColor());
+                        styleMenuItem(item);
                     }
+                }
+            }
+        }
+    }
+
+    private void styleMenuItem(JMenuItem item) {
+        item.setForeground(themeManager.getMenuFgColor());
+        item.setBackground(themeManager.getMenuBgColor());
+        item.setOpaque(true);
+
+        // Handle submenus recursively
+        if (item instanceof JMenu) {
+            JMenu submenu = (JMenu) item;
+            for (int i = 0; i < submenu.getItemCount(); i++) {
+                JMenuItem subItem = submenu.getItem(i);
+                if (subItem != null) {
+                    styleMenuItem(subItem);
+                }
+            }
+        }
+    }
+
+    private void stylePopupMenu(JMenu menu) {
+        javax.swing.JPopupMenu popup = menu.getPopupMenu();
+        if (popup != null) {
+            popup.setBackground(themeManager.getMenuBgColor());
+            popup.setForeground(themeManager.getMenuFgColor());
+
+            // Style all components in the popup
+            Component[] components = popup.getComponents();
+            for (Component comp : components) {
+                if (comp instanceof JMenuItem) {
+                    styleMenuItem((JMenuItem) comp);
                 }
             }
         }

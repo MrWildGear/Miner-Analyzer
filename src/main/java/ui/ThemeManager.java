@@ -160,7 +160,7 @@ public class ThemeManager {
             menuBgColor = new Color(45, 45, 45);
             menuFgColor = Color.WHITE;
             borderColor = new Color(60, 60, 60); // Darker border color for dark mode
-            headerBgColor = new Color(35, 35, 35); // Slightly lighter than bg for header
+            headerBgColor = new Color(45, 45, 45); // Match menu bar color
             tierColors.put("S", new Color(0, 255, 0));
             tierColors.put("A", new Color(0, 255, 255));
             tierColors.put("B", new Color(0, 128, 255));
@@ -183,6 +183,32 @@ public class ThemeManager {
             tierColors.put("D", new Color(170, 0, 170));
             tierColors.put("E", new Color(204, 102, 0));
             tierColors.put("F", new Color(204, 0, 0));
+        }
+        applyUIManagerTheme();
+    }
+    
+    private void applyUIManagerTheme() {
+        // Apply UIManager properties for popup menus and menu items
+        try {
+            UIManager.put("PopupMenu.background", menuBgColor);
+            UIManager.put("PopupMenu.foreground", menuFgColor);
+            UIManager.put("Menu.background", menuBgColor);
+            UIManager.put("Menu.foreground", menuFgColor);
+            UIManager.put("MenuItem.background", menuBgColor);
+            UIManager.put("MenuItem.foreground", menuFgColor);
+            UIManager.put("MenuBar.background", menuBgColor);
+            UIManager.put("MenuBar.foreground", menuFgColor);
+            
+            // Selected menu item colors
+            if (isDarkMode) {
+                UIManager.put("MenuItem.selectionBackground", new Color(70, 70, 70));
+                UIManager.put("MenuItem.selectionForeground", Color.WHITE);
+            } else {
+                UIManager.put("MenuItem.selectionBackground", new Color(200, 200, 200));
+                UIManager.put("MenuItem.selectionForeground", Color.BLACK);
+            }
+        } catch (Exception e) {
+            // Ignore UIManager errors
         }
     }
     
