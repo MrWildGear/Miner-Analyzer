@@ -6,6 +6,12 @@ build/
 *.exe
 dist/
 
+# Gradle build outputs (keep gradle wrapper)
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
 # IDE files
 .idea/
 .vscode/
