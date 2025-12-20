@@ -11,6 +11,7 @@
 
 Run any script directly:
 ```powershell
+cd scripts\powershell
 .\rolled Ore Strip miner.ps1
 ```
 
@@ -21,5 +22,5 @@ Run any script directly:
 - Mutation percentage calculations
 - Color-coded output
 
-See the main [README.md](../README.md) for full documentation.
+See the main [README.md](../../README.md) for full documentation.
 

@@ -1,12 +1,8 @@
 @echo off
 REM ============================================================================
-REM EVE Online Strip Miner Roll Analyzer - Single File Launcher
+REM EVE Online Strip Miner Roll Analyzer - Launcher
 REM ============================================================================
-REM This is a standalone launcher that can be shared as a single file.
-REM It will automatically build the application if needed.
-REM 
-REM TO SHARE: Send this file along with the 'java' folder, or use
-REM           create_executable.bat to create a single .exe file.
+REM This launcher automatically builds the application if needed and launches it.
 REM ============================================================================
 
 REM Add JDK bin folder to PATH if not already there
@@ -15,9 +11,12 @@ if exist "%JDK_PATH%\javac.exe" (
     set "PATH=%JDK_PATH%;%PATH%"
 )
 
-REM Get the directory where this batch file is located
+REM Get the project root directory (1 level up from scripts/)
 set "LAUNCHER_DIR=%~dp0"
-cd /d "%LAUNCHER_DIR%"
+set "PROJECT_ROOT=%LAUNCHER_DIR%..\"
+REM Normalize the path by changing to it
+cd /d "%PROJECT_ROOT%"
+set "PROJECT_ROOT=%CD%"
 
 REM Check if Java is installed
 java -version >nul 2>&1
@@ -36,20 +35,15 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-REM Check if we're in the java folder or root folder
-if exist "java\EveMinerAnalyzer.java" (
-    set "JAVA_DIR=%LAUNCHER_DIR%java"
-    cd /d "%JAVA_DIR%"
-) else if exist "EveMinerAnalyzer.java" (
-    set "JAVA_DIR=%LAUNCHER_DIR%"
-    cd /d "%JAVA_DIR%"
-) else (
+REM Check if source file exists
+set "SOURCE_FILE=%PROJECT_ROOT%\src\main\java\EveMinerAnalyzer.java"
+if not exist "%SOURCE_FILE%" (
     echo.
     echo ========================================
     echo ERROR: Cannot find EveMinerAnalyzer.java
     echo ========================================
     echo.
-    echo Please ensure this launcher is in the same folder as the Java files.
+    echo Expected location: %SOURCE_FILE%
     echo.
     pause
     exit /b 1
@@ -58,7 +52,7 @@ if exist "java\EveMinerAnalyzer.java" (
 REM Extract version from Java file
 setlocal enabledelayedexpansion
 set "VERSION=unknown"
-for /f "tokens=7" %%a in ('findstr /C:"VERSION = " "%JAVA_DIR%\EveMinerAnalyzer.java"') do (
+for /f "tokens=7" %%a in ('findstr /C:"VERSION = " "%SOURCE_FILE%"') do (
     set "VER_TEMP=%%a"
     REM Remove quotes and semicolon
     set "VERSION=!VER_TEMP:"=!"
@@ -70,9 +64,10 @@ if "%VERSION%"=="" (
 )
 
 REM Look for versioned JAR first, then fall back to non-versioned
-set "JAR_FILE=%JAVA_DIR%\EveMinerAnalyzer-%VERSION%.jar"
+set "TARGET_DIR=%PROJECT_ROOT%\target"
+set "JAR_FILE=%TARGET_DIR%\EveMinerAnalyzer-%VERSION%.jar"
 if not exist "%JAR_FILE%" (
-    set "JAR_FILE=%JAVA_DIR%\EveMinerAnalyzer.jar"
+    set "JAR_FILE=%TARGET_DIR%\EveMinerAnalyzer.jar"
 )
 
 REM Check if JAR exists, if not build it
@@ -84,40 +79,23 @@ if not exist "%JAR_FILE%" (
     echo This may take a few seconds...
     echo.
     
-    REM Clean previous build
-    if exist build rmdir /s /q build
-    mkdir build 2>nul
-    
-    REM Compile
-    echo Compiling...
-    javac -d build "%JAVA_DIR%\EveMinerAnalyzer.java"
-    if %errorlevel% neq 0 (
+    call "%LAUNCHER_DIR%java\build.bat" silent
+    if errorlevel 1 (
         echo.
-        echo Compilation failed!
-        echo Please check that all files are present.
+        echo Build failed!
         pause
         exit /b 1
     )
     
-    REM Create JAR with versioned name
-    set "BUILD_JAR_FILE=%JAVA_DIR%\EveMinerAnalyzer-%VERSION%.jar"
-    echo Creating JAR file (version %VERSION%)...
-    cd build
-    if exist "%JAVA_DIR%\MANIFEST.MF" (
-        jar cfm "%BUILD_JAR_FILE%" "%JAVA_DIR%\MANIFEST.MF" *
-    ) else (
-        REM Create minimal manifest if it doesn't exist
-        echo Manifest-Version: 1.0 > "%JAVA_DIR%\temp_manifest.mf"
-        echo Main-Class: EveMinerAnalyzer >> "%JAVA_DIR%\temp_manifest.mf"
-        jar cfm "%BUILD_JAR_FILE%" "%JAVA_DIR%\temp_manifest.mf" *
-        del "%JAVA_DIR%\temp_manifest.mf"
+    REM Update JAR_FILE after build
+    set "JAR_FILE=%TARGET_DIR%\EveMinerAnalyzer-%VERSION%.jar"
+    if not exist "%JAR_FILE%" (
+        set "JAR_FILE=%TARGET_DIR%\EveMinerAnalyzer.jar"
     )
-    cd ..
     
-    set "JAR_FILE=%BUILD_JAR_FILE%"
     if not exist "%JAR_FILE%" (
         echo.
-        echo JAR creation failed!
+        echo JAR file not found after build!
         pause
         exit /b 1
     )
