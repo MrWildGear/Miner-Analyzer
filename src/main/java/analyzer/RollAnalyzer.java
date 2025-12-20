@@ -27,69 +27,82 @@ public class RollAnalyzer {
         mutatedStats.putAll(stats);
         result.stats = mutatedStats;
         
+        // Validate required stats exist and are not null
+        Double miningAmount = mutatedStats.get("MiningAmount");
+        Double activationTime = mutatedStats.get("ActivationTime");
+        if (miningAmount == null || activationTime == null || activationTime <= 0) {
+            throw new IllegalArgumentException("Missing or invalid required stats: MiningAmount or ActivationTime");
+        }
+        
         // Calculate m3/sec
         result.m3PerSec = MiningCalculator.calculateBaseM3PerSec(
-            mutatedStats.get("MiningAmount"), 
-            mutatedStats.get("ActivationTime")
+            miningAmount, 
+            activationTime
         );
+        
+        // Get stat values with defaults
+        Double critChance = mutatedStats.getOrDefault("CriticalSuccessChance", 0.0);
+        Double critBonus = mutatedStats.getOrDefault("CriticalSuccessBonusYield", 0.0);
+        Double residueProb = mutatedStats.getOrDefault("ResidueProbability", 0.0);
+        Double residueMult = mutatedStats.getOrDefault("ResidueVolumeMultiplier", 0.0);
         
         // Calculate effective m3/sec
         if ("ORE".equals(minerType)) {
             result.effectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield"),
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus,
                 0.0, 0.0
             );
             result.basePlusCritsM3PerSec = null;
         } else {
             result.basePlusCritsM3PerSec = MiningCalculator.calculateBasePlusCritsM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield")
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus
             );
             result.effectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield"),
-                mutatedStats.get("ResidueProbability"),
-                mutatedStats.get("ResidueVolumeMultiplier")
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus,
+                residueProb,
+                residueMult
             );
         }
         
         // Calculate real-world values
         result.realWorldM3PerSec = MiningCalculator.calculateRealWorldBaseM3PerSec(
-            mutatedStats.get("MiningAmount"),
-            mutatedStats.get("ActivationTime")
+            miningAmount,
+            activationTime
         );
         
         if ("ORE".equals(minerType)) {
             result.realWorldEffectiveM3PerSec = MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield"),
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus,
                 0.0, 0.0
             );
             result.realWorldBasePlusCritsM3PerSec = null;
         } else {
             result.realWorldBasePlusCritsM3PerSec = MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield"),
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus,
                 0.0, 0.0
             );
             result.realWorldEffectiveM3PerSec = MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-                mutatedStats.get("MiningAmount"),
-                mutatedStats.get("ActivationTime"),
-                mutatedStats.get("CriticalSuccessChance"),
-                mutatedStats.get("CriticalSuccessBonusYield"),
-                mutatedStats.get("ResidueProbability"),
-                mutatedStats.get("ResidueVolumeMultiplier")
+                miningAmount,
+                activationTime,
+                critChance,
+                critBonus,
+                residueProb,
+                residueMult
             );
         }
         

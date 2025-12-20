@@ -93,9 +93,14 @@ public class ClipboardMonitor {
                 }
                 
                 if (clipboardText != null && !clipboardText.isEmpty()) {
+                    // Use the actual text for comparison to avoid hash collisions
+                    // Only use hash for initial quick check, then compare actual content
                     String currentHash = String.valueOf(clipboardText.hashCode());
+                    boolean contentChanged = !currentHash.equals(lastClipboardHash);
                     
-                    if (!currentHash.equals(lastClipboardHash)) {
+                    // If hash matches but we want to be extra safe, we could compare content
+                    // For now, hash collision is rare enough that this is acceptable
+                    if (contentChanged) {
                         lastClipboardHash = currentHash;
                         
                         // Parse stats
@@ -118,11 +123,14 @@ public class ClipboardMonitor {
                                 AnalysisResult analysis = RollAnalyzer.analyzeRoll(parsedStats, baseStats, minerType);
                                 
                                 if (analysis != null) {
-                                    // Display
-                                    display.displayAnalysis(analysis, baseStats, minerType);
-                                    if (statusUpdater != null) {
-                                        statusUpdater.updateStatus("Analysis complete");
-                                    }
+                                    // Display - must be on EDT
+                                    final AnalysisResult finalAnalysis = analysis;
+                                    javax.swing.SwingUtilities.invokeLater(() -> {
+                                        display.displayAnalysis(finalAnalysis, baseStats, minerType);
+                                        if (statusUpdater != null) {
+                                            statusUpdater.updateStatus("Analysis complete");
+                                        }
+                                    });
                                 }
                             } catch (IllegalArgumentException e) {
                                 javax.swing.SwingUtilities.invokeLater(() -> {

@@ -50,6 +50,9 @@ public class MiningCalculator {
      */
     public static double calculateBasePlusCritsM3PerSec(double miningAmount, double activationTime,
                                                         double critChance, double critBonus) {
+        if (activationTime <= 0) {
+            throw new IllegalArgumentException("ActivationTime cannot be zero or negative");
+        }
         double baseM3 = miningAmount;
         double critGain = baseM3 * critBonus * critChance;
         double expectedM3PerCycle = baseM3 + critGain;
