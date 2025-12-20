@@ -1,0 +1,66 @@
+name: Build and Publish Java Package
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+      
+      - name: Extract version
+        id: version
+        run: |
+          VERSION=$(grep -oP 'VERSION = "\K[^"]+' src/main/java/app/EveMinerAnalyzer.java)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Extracted version: $VERSION"
+      
+      - name: Setup Gradle
+        uses: gradle/gradle-build-action@v2
+        with:
+          gradle-version: '8.5'
+      
+      - name: Grant execute permission for Gradle wrapper
+        if: hashFiles('gradlew') != ''
+        run: chmod +x gradlew
+      
+      - name: Build with Gradle
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew build
+          else
+            gradle build
+          fi
+      
+      - name: Publish to GitHub Packages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f ./gradlew ]; then
+            ./gradlew publish
+          else
+            gradle publish
+          fi
+      
+      - name: Upload JAR artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: eve-miner-analyzer-${{ steps.version.outputs.version }}
+          path: build/libs/*.jar
+          retention-days: 30
+
