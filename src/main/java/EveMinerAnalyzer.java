@@ -32,7 +32,7 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.3";
+    private static final String VERSION = "1.2.7";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
 
     // UI Components
@@ -196,6 +196,21 @@ public class EveMinerAnalyzer extends JFrame {
         resultsText.setFont(new Font("Consolas", Font.PLAIN, 10));
         doc = resultsText.getStyledDocument();
 
+        // Set up default style for the document to ensure correct text color
+        try {
+            javax.swing.text.Style defaultStyle = doc.getStyle("default");
+            if (defaultStyle == null) {
+                defaultStyle = doc.addStyle("default", null);
+            }
+            if (defaultStyle != null) {
+                javax.swing.text.StyleConstants.setForeground(defaultStyle,
+                        themeManager.getFgColor());
+                doc.setLogicalStyle(0, defaultStyle);
+            }
+        } catch (Exception e) {
+            // Ignore style setup errors
+        }
+
         // Initialize analysis display
         analysisDisplay =
                 new AnalysisDisplay(doc, themeManager.getFgColor(), themeManager.getTierColors());
@@ -264,6 +279,21 @@ public class EveMinerAnalyzer extends JFrame {
             if (resultsText != null) {
                 resultsText.setBackground(themeManager.getFrameBg());
                 resultsText.setForeground(themeManager.getFgColor());
+                // Set logical style to ensure default text color is correct
+                try {
+                    javax.swing.text.Style style =
+                            resultsText.getStyledDocument().getStyle("default");
+                    if (style == null) {
+                        style = resultsText.getStyledDocument().addStyle("default", null);
+                    }
+                    if (style != null) {
+                        javax.swing.text.StyleConstants.setForeground(style,
+                                themeManager.getFgColor());
+                        resultsText.getStyledDocument().setLogicalStyle(0, style);
+                    }
+                } catch (Exception e) {
+                    // Ignore style errors
+                }
             }
 
             // Update scroll pane border
@@ -393,8 +423,14 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void updateStatus(String message) {
         SwingUtilities.invokeLater(() -> {
-            String timestamp = java.time.LocalTime.now().toString().substring(0, 8);
-            statusLabel.setText(message + " - " + timestamp);
+            try {
+                String timeStr = java.time.LocalTime.now().toString();
+                String timestamp = timeStr.length() >= 8 ? timeStr.substring(0, 8) : timeStr;
+                statusLabel.setText(message + " - " + timestamp);
+            } catch (Exception e) {
+                // Fallback if timestamp formatting fails
+                statusLabel.setText(message);
+            }
         });
     }
 

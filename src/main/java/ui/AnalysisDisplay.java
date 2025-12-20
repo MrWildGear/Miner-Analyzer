@@ -39,6 +39,20 @@ public class AnalysisDisplay {
             return;
         }
         
+        try {
+            // Ensure the default style has the correct foreground color
+            // This affects text inserted without explicit styling
+            Style defaultStyle = doc.getStyle("default");
+            if (defaultStyle == null) {
+                defaultStyle = doc.addStyle("default", null);
+            }
+            if (defaultStyle != null) {
+                StyleConstants.setForeground(defaultStyle, fgColor);
+            }
+        } catch (Exception e) {
+            // Ignore default style setup errors
+        }
+        
         if (tierColors == null || tierColors.isEmpty()) {
             return;
         }
@@ -121,96 +135,129 @@ public class AnalysisDisplay {
             appendText(repeat("-", 76) + "\n", fgColor);
             
             // Mining Amount
-            double miningMut = ((stats.get("MiningAmount") / baseStats.get("MiningAmount")) - 1) * 100;
+            Double miningAmount = stats.get("MiningAmount");
+            Double baseMiningAmount = baseStats.get("MiningAmount");
+            double miningMut = 0.0;
+            if (miningAmount != null && baseMiningAmount != null && baseMiningAmount > 0) {
+                miningMut = ((miningAmount / baseMiningAmount) - 1) * 100;
+            }
             String tag = getColorTag(miningMut);
             appendText(String.format("%-20s ", "Mining Amount"), fgColor);
-            appendText(String.format("%.1f m3%12s ", baseStats.get("MiningAmount"), ""), fgColor);
+            appendText(String.format("%.1f m3%12s ", baseMiningAmount != null ? baseMiningAmount : 0.0, ""), fgColor);
             if (tag != null) {
-                appendStyledText(String.format("%.1f m3%12s ", stats.get("MiningAmount"), ""), tag);
+                appendStyledText(String.format("%.1f m3%12s ", miningAmount != null ? miningAmount : 0.0, ""), tag);
                 appendStyledText(formatPercentage(miningMut) + "\n", tag);
             } else {
-                appendText(String.format("%.1f m3%12s ", stats.get("MiningAmount"), ""), fgColor);
+                appendText(String.format("%.1f m3%12s ", miningAmount != null ? miningAmount : 0.0, ""), fgColor);
                 appendText(formatPercentage(miningMut) + "\n", fgColor);
             }
             
             // Activation Time
-            double timeMut = ((stats.get("ActivationTime") / baseStats.get("ActivationTime")) - 1) * 100;
+            Double activationTime = stats.get("ActivationTime");
+            Double baseActivationTime = baseStats.get("ActivationTime");
+            double timeMut = 0.0;
+            if (activationTime != null && baseActivationTime != null && baseActivationTime > 0) {
+                timeMut = ((activationTime / baseActivationTime) - 1) * 100;
+            }
             tag = getColorTag(-timeMut);
             appendText(String.format("%-20s ", "Activation Time"), fgColor);
-            appendText(String.format("%.1f s%13s ", baseStats.get("ActivationTime"), ""), fgColor);
+            appendText(String.format("%.1f s%13s ", baseActivationTime != null ? baseActivationTime : 0.0, ""), fgColor);
             if (tag != null) {
-                appendStyledText(String.format("%.1f s%13s ", stats.get("ActivationTime"), ""), tag);
+                appendStyledText(String.format("%.1f s%13s ", activationTime != null ? activationTime : 0.0, ""), tag);
                 appendStyledText(formatPercentage(timeMut) + "\n", tag);
             } else {
-                appendText(String.format("%.1f s%13s ", stats.get("ActivationTime"), ""), fgColor);
+                appendText(String.format("%.1f s%13s ", activationTime != null ? activationTime : 0.0, ""), fgColor);
                 appendText(formatPercentage(timeMut) + "\n", fgColor);
             }
             
             // Crit Chance
-            double critChanceMut = baseStats.get("CriticalSuccessChance") > 0 ?
-                ((stats.get("CriticalSuccessChance") / baseStats.get("CriticalSuccessChance")) - 1) * 100 : 0;
+            Double critChance = stats.get("CriticalSuccessChance");
+            Double baseCritChance = baseStats.get("CriticalSuccessChance");
+            double critChanceMut = 0.0;
+            if (critChance != null && baseCritChance != null && baseCritChance > 0) {
+                critChanceMut = ((critChance / baseCritChance) - 1) * 100;
+            }
             tag = getColorTag(critChanceMut);
             appendText(String.format("%-20s ", "Crit Chance"), fgColor);
-            appendText(String.format("%.2f%%%15s ", baseStats.get("CriticalSuccessChance") * 100, ""), fgColor);
+            appendText(String.format("%.2f%%%15s ", (baseCritChance != null ? baseCritChance : 0.0) * 100, ""), fgColor);
             if (tag != null) {
-                appendStyledText(String.format("%.2f%%%15s ", stats.get("CriticalSuccessChance") * 100, ""), tag);
+                appendStyledText(String.format("%.2f%%%15s ", (critChance != null ? critChance : 0.0) * 100, ""), tag);
                 appendStyledText(formatPercentage(critChanceMut) + "\n", tag);
             } else {
-                appendText(String.format("%.2f%%%15s ", stats.get("CriticalSuccessChance") * 100, ""), fgColor);
+                appendText(String.format("%.2f%%%15s ", (critChance != null ? critChance : 0.0) * 100, ""), fgColor);
                 appendText(formatPercentage(critChanceMut) + "\n", fgColor);
             }
             
             // Crit Bonus
-            double critBonusMut = ((stats.get("CriticalSuccessBonusYield") / baseStats.get("CriticalSuccessBonusYield")) - 1) * 100;
+            Double critBonus = stats.get("CriticalSuccessBonusYield");
+            Double baseCritBonus = baseStats.get("CriticalSuccessBonusYield");
+            double critBonusMut = 0.0;
+            if (critBonus != null && baseCritBonus != null && baseCritBonus > 0) {
+                critBonusMut = ((critBonus / baseCritBonus) - 1) * 100;
+            }
             tag = getColorTag(critBonusMut);
             appendText(String.format("%-20s ", "Crit Bonus"), fgColor);
-            appendText(String.format("%.0f%%%16s ", baseStats.get("CriticalSuccessBonusYield") * 100, ""), fgColor);
+            appendText(String.format("%.0f%%%16s ", (baseCritBonus != null ? baseCritBonus : 0.0) * 100, ""), fgColor);
             if (tag != null) {
-                appendStyledText(String.format("%.0f%%%16s ", stats.get("CriticalSuccessBonusYield") * 100, ""), tag);
+                appendStyledText(String.format("%.0f%%%16s ", (critBonus != null ? critBonus : 0.0) * 100, ""), tag);
                 appendStyledText(formatPercentage(critBonusMut) + "\n", tag);
             } else {
-                appendText(String.format("%.0f%%%16s ", stats.get("CriticalSuccessBonusYield") * 100, ""), fgColor);
+                appendText(String.format("%.0f%%%16s ", (critBonus != null ? critBonus : 0.0) * 100, ""), fgColor);
                 appendText(formatPercentage(critBonusMut) + "\n", fgColor);
             }
             
             // Residue (Modulated only)
             if ("Modulated".equals(minerType)) {
-                double residueProbMut = ((stats.get("ResidueProbability") / baseStats.get("ResidueProbability")) - 1) * 100;
+                Double residueProb = stats.get("ResidueProbability");
+                Double baseResidueProb = baseStats.get("ResidueProbability");
+                double residueProbMut = 0.0;
+                if (residueProb != null && baseResidueProb != null && baseResidueProb > 0) {
+                    residueProbMut = ((residueProb / baseResidueProb) - 1) * 100;
+                }
                 tag = getColorTag(-residueProbMut);
                 appendText(String.format("%-20s ", "Residue Prob"), fgColor);
-                appendText(String.format("%.2f%%%15s ", baseStats.get("ResidueProbability") * 100, ""), fgColor);
+                appendText(String.format("%.2f%%%15s ", (baseResidueProb != null ? baseResidueProb : 0.0) * 100, ""), fgColor);
                 if (tag != null) {
-                    appendStyledText(String.format("%.2f%%%15s ", stats.get("ResidueProbability") * 100, ""), tag);
+                    appendStyledText(String.format("%.2f%%%15s ", (residueProb != null ? residueProb : 0.0) * 100, ""), tag);
                     appendStyledText(formatPercentage(residueProbMut) + "\n", tag);
                 } else {
-                    appendText(String.format("%.2f%%%15s ", stats.get("ResidueProbability") * 100, ""), fgColor);
+                    appendText(String.format("%.2f%%%15s ", (residueProb != null ? residueProb : 0.0) * 100, ""), fgColor);
                     appendText(formatPercentage(residueProbMut) + "\n", fgColor);
                 }
                 
-                double residueMultMut = ((stats.get("ResidueVolumeMultiplier") / baseStats.get("ResidueVolumeMultiplier")) - 1) * 100;
+                Double residueMult = stats.get("ResidueVolumeMultiplier");
+                Double baseResidueMult = baseStats.get("ResidueVolumeMultiplier");
+                double residueMultMut = 0.0;
+                if (residueMult != null && baseResidueMult != null && baseResidueMult > 0) {
+                    residueMultMut = ((residueMult / baseResidueMult) - 1) * 100;
+                }
                 tag = getColorTag(-residueMultMut);
                 appendText(String.format("%-20s ", "Residue Mult"), fgColor);
-                appendText(String.format("%.3f x%14s ", baseStats.get("ResidueVolumeMultiplier"), ""), fgColor);
+                appendText(String.format("%.3f x%14s ", baseResidueMult != null ? baseResidueMult : 0.0, ""), fgColor);
                 if (tag != null) {
-                    appendStyledText(String.format("%.3f x%14s ", stats.get("ResidueVolumeMultiplier"), ""), tag);
+                    appendStyledText(String.format("%.3f x%14s ", residueMult != null ? residueMult : 0.0, ""), tag);
                     appendStyledText(formatPercentage(residueMultMut) + "\n", tag);
                 } else {
-                    appendText(String.format("%.3f x%14s ", stats.get("ResidueVolumeMultiplier"), ""), fgColor);
+                    appendText(String.format("%.3f x%14s ", residueMult != null ? residueMult : 0.0, ""), fgColor);
                     appendText(formatPercentage(residueMultMut) + "\n", fgColor);
                 }
             }
             
             // Optimal Range
-            double optimalRangeMut = baseStats.get("OptimalRange") > 0 ?
-                ((stats.get("OptimalRange") / baseStats.get("OptimalRange")) - 1) * 100 : 0;
+            Double optimalRange = stats.get("OptimalRange");
+            Double baseOptimalRange = baseStats.get("OptimalRange");
+            double optimalRangeMut = 0.0;
+            if (optimalRange != null && baseOptimalRange != null && baseOptimalRange > 0) {
+                optimalRangeMut = ((optimalRange / baseOptimalRange) - 1) * 100;
+            }
             tag = getColorTag(optimalRangeMut);
             appendText(String.format("%-20s ", "Optimal Range"), fgColor);
-            appendText(String.format("%.2f km%14s ", baseStats.get("OptimalRange"), ""), fgColor);
+            appendText(String.format("%.2f km%14s ", baseOptimalRange != null ? baseOptimalRange : 0.0, ""), fgColor);
             if (tag != null) {
-                appendStyledText(String.format("%.2f km%14s ", stats.get("OptimalRange"), ""), tag);
+                appendStyledText(String.format("%.2f km%14s ", optimalRange != null ? optimalRange : 0.0, ""), tag);
                 appendStyledText(formatPercentage(optimalRangeMut) + "\n", tag);
             } else {
-                appendText(String.format("%.2f km%14s ", stats.get("OptimalRange"), ""), fgColor);
+                appendText(String.format("%.2f km%14s ", optimalRange != null ? optimalRange : 0.0, ""), fgColor);
                 appendText(formatPercentage(optimalRangeMut) + "\n", fgColor);
             }
             
@@ -221,25 +268,31 @@ public class AnalysisDisplay {
             appendText(String.format("%-20s %-20s %-20s %-20s\n", "Metric", "Base", "Rolled", "% Change"), fgColor);
             appendText(repeat("-", 76) + "\n", fgColor);
             
-            // Calculate base values
-            double baseM3PerSec = MiningCalculator.calculateBaseM3PerSec(baseStats.get("MiningAmount"), baseStats.get("ActivationTime"));
+            // Calculate base values - use getOrDefault to handle nulls
+            Double baseMiningAmt = baseStats.get("MiningAmount");
+            Double baseActTime = baseStats.get("ActivationTime");
+            if (baseMiningAmt == null || baseActTime == null || baseActTime <= 0) {
+                return; // Cannot calculate without required base stats
+            }
+            
+            double baseM3PerSec = MiningCalculator.calculateBaseM3PerSec(baseMiningAmt, baseActTime);
             double baseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
-                baseStats.get("MiningAmount"),
-                baseStats.get("ActivationTime"),
-                baseStats.get("CriticalSuccessChance"),
-                baseStats.get("CriticalSuccessBonusYield"),
+                baseMiningAmt,
+                baseActTime,
+                baseStats.getOrDefault("CriticalSuccessChance", 0.0),
+                baseStats.getOrDefault("CriticalSuccessBonusYield", 0.0),
                 baseStats.getOrDefault("ResidueProbability", 0.0),
                 baseStats.getOrDefault("ResidueVolumeMultiplier", 0.0)
             );
             double baseRealWorldM3PerSec = MiningCalculator.calculateRealWorldBaseM3PerSec(
-                baseStats.get("MiningAmount"),
-                baseStats.get("ActivationTime")
+                baseMiningAmt,
+                baseActTime
             );
             double baseRealWorldEffectiveM3PerSec = MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-                baseStats.get("MiningAmount"),
-                baseStats.get("ActivationTime"),
-                baseStats.get("CriticalSuccessChance"),
-                baseStats.get("CriticalSuccessBonusYield"),
+                baseMiningAmt,
+                baseActTime,
+                baseStats.getOrDefault("CriticalSuccessChance", 0.0),
+                baseStats.getOrDefault("CriticalSuccessBonusYield", 0.0),
                 baseStats.getOrDefault("ResidueProbability", 0.0),
                 baseStats.getOrDefault("ResidueVolumeMultiplier", 0.0)
             );
@@ -260,16 +313,16 @@ public class AnalysisDisplay {
             // Base + Crits (Modulated only)
             if ("Modulated".equals(minerType) && analysis.basePlusCritsM3PerSec != null) {
                 double baseBasePlusCrits = MiningCalculator.calculateBasePlusCritsM3PerSec(
-                    baseStats.get("MiningAmount"),
-                    baseStats.get("ActivationTime"),
-                    baseStats.get("CriticalSuccessChance"),
-                    baseStats.get("CriticalSuccessBonusYield")
+                    baseMiningAmt,
+                    baseActTime,
+                    baseStats.getOrDefault("CriticalSuccessChance", 0.0),
+                    baseStats.getOrDefault("CriticalSuccessBonusYield", 0.0)
                 );
                 double baseRealWorldBasePlusCrits = MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-                    baseStats.get("MiningAmount"),
-                    baseStats.get("ActivationTime"),
-                    baseStats.get("CriticalSuccessChance"),
-                    baseStats.get("CriticalSuccessBonusYield"),
+                    baseMiningAmt,
+                    baseActTime,
+                    baseStats.getOrDefault("CriticalSuccessChance", 0.0),
+                    baseStats.getOrDefault("CriticalSuccessBonusYield", 0.0),
                     0.0, 0.0
                 );
                 double basePlusCritsPct = baseBasePlusCrits > 0 ?
@@ -356,11 +409,21 @@ public class AnalysisDisplay {
     
     public void appendText(String text, Color color) {
         try {
-            Style style = doc.addStyle("temp", null);
-            StyleConstants.setForeground(style, color);
-            doc.insertString(doc.getLength(), text, style);
+            // Create a new attribute set with the specified color
+            // Use MutableAttributeSet to ensure the color is applied
+            javax.swing.text.MutableAttributeSet attr = new javax.swing.text.SimpleAttributeSet();
+            StyleConstants.setForeground(attr, color);
+            doc.insertString(doc.getLength(), text, attr);
         } catch (BadLocationException e) {
             e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+            // Fallback: try inserting without style (uses component's default foreground)
+            try {
+                doc.insertString(doc.getLength(), text, null);
+            } catch (BadLocationException ex) {
+                ex.printStackTrace();
+            }
         }
     }
     
