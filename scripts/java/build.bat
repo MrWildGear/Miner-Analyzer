@@ -27,16 +27,20 @@ REM Extract version from Java file
 REM Find the VERSION line and extract the quoted value using simple batch parsing
 setlocal enabledelayedexpansion
 set "VERSION=unknown"
-for /f "tokens=7" %%a in ('findstr /C:"VERSION = " "src\main\java\EveMinerAnalyzer.java"') do (
+REM Look for the pattern: VERSION = "x.x.x"
+for /f "tokens=7 delims= " %%a in ('findstr /C:"VERSION = " "src\main\java\EveMinerAnalyzer.java"') do (
     set "VER_TEMP=%%a"
     REM Remove quotes and semicolon
-    set "VERSION=!VER_TEMP:"=!"
-    set "VERSION=!VERSION:;=!"
+    set "VER_TEMP=!VER_TEMP:"=!"
+    set "VER_TEMP=!VER_TEMP:;=!"
+    set "VERSION=!VER_TEMP!"
 )
 endlocal & set "VERSION=%VERSION%"
 if "%VERSION%"=="" (
     echo Warning: Could not extract version, using default
     set "VERSION=unknown"
+) else (
+    echo Extracted version: %VERSION%
 )
 
 set "JAR_NAME=EveMinerAnalyzer-%VERSION%.jar"
@@ -58,16 +62,25 @@ mkdir "%BUILD_DIR%" 2>nul
 
 echo.
 echo Compiling...
-echo Source: %SOURCE_FILE%
+echo Source: %PROJECT_ROOT%\src\main\java\*.java
 echo Output: %BUILD_DIR%
-javac -d "%BUILD_DIR%" "%SOURCE_FILE%"
-if %errorlevel% neq 0 (
+REM Collect all Java files recursively
+setlocal enabledelayedexpansion
+set "JAVA_FILES="
+for /r "%PROJECT_ROOT%\src\main\java" %%f in (*.java) do (
+    set "JAVA_FILES=!JAVA_FILES! "%%f""
+)
+REM Compile all Java files
+javac -d "%BUILD_DIR%" -sourcepath "%PROJECT_ROOT%\src\main\java" !JAVA_FILES!
+if !errorlevel! neq 0 (
+    endlocal
     echo.
     echo Compilation failed!
-    echo Please check that Java is installed and the source file exists.
+    echo Please check that Java is installed and the source files exist.
     if "%1" neq "silent" pause
     exit /b 1
 )
+endlocal
 
 echo.
 echo Creating JAR file (version %VERSION%)...
