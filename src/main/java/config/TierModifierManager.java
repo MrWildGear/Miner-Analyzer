@@ -27,6 +27,13 @@ public class TierModifierManager {
     }
 
     /**
+     * Private constructor to prevent instantiation of utility class
+     */
+    private TierModifierManager() {
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
+    }
+
+    /**
      * Loads tier modifiers from file, or returns defaults if file doesn't exist
      */
     public static Map<String, Double> loadTierModifiers() {

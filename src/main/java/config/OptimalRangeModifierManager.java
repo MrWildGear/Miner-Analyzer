@@ -8,18 +8,44 @@ import java.io.FileWriter;
 import java.io.IOException;
 
 /**
- * Manages optimal range modifier for sell price calculation
- * Applies when tier has "+" suffix (optimal range is increased)
+ * Manages optimal range modifier for sell price calculation Applies when tier has "+" suffix
+ * (optimal range is increased)
  */
 public class OptimalRangeModifierManager {
 
     private static final double DEFAULT_MODIFIER = 1.0;
 
     /**
+     * Private constructor to prevent instantiation of utility class
+     */
+    private OptimalRangeModifierManager() {
+        throw new AssertionError("Utility class cannot be instantiated");
+    }
+
+    /**
      * Gets the modifier file path
      */
     private static File getModifiersFile() {
         return ConfigManager.getOptimalRangeModifiersFile();
+    }
+
+    /**
+     * Parses a modifier value from a string line
+     * 
+     * @param line the line to parse
+     * @return the parsed modifier value, or null if parsing fails
+     */
+    private static Double parseModifierValue(String line) {
+        try {
+            double value = Double.parseDouble(line);
+            if (value < 0) {
+                value = 0.0; // Don't allow negative modifiers
+            }
+            return value;
+        } catch (NumberFormatException ignored) {
+            // Return null on parse error
+            return null;
+        }
     }
 
     /**
@@ -39,14 +65,9 @@ public class OptimalRangeModifierManager {
             if (line != null) {
                 line = line.trim();
                 if (!line.isEmpty() && !line.startsWith("#")) {
-                    try {
-                        double value = Double.parseDouble(line);
-                        if (value < 0) {
-                            value = 0.0; // Don't allow negative modifiers
-                        }
+                    Double value = parseModifierValue(line);
+                    if (value != null) {
                         return value;
-                    } catch (NumberFormatException ignored) {
-                        // Return default on parse error
                     }
                 }
             }

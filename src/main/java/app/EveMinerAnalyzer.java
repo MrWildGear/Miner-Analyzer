@@ -45,11 +45,12 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.6";
+    private static final String VERSION = "1.4.7";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
     private static final String INVALID_INPUT = "Invalid Input";
+    private static final String FONT_ARIAL = "Arial";
 
     // UI Components
     private JRadioButton oreRadio;
@@ -180,7 +181,7 @@ public class EveMinerAnalyzer extends JFrame {
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
         JLabel titleLabel = new JLabel(APP_NAME);
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 16));
+        titleLabel.setFont(new Font(FONT_ARIAL, Font.BOLD, 16));
         titleLabel.setForeground(themeManager.getFgColor());
         headerPanel.add(titleLabel, BorderLayout.NORTH);
 
@@ -600,7 +601,7 @@ public class EveMinerAnalyzer extends JFrame {
         // Tier modifiers section
         JLabel tierSectionLabel = new JLabel("Tier Modifiers:");
         tierSectionLabel.setForeground(themeManager.getFgColor());
-        tierSectionLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        tierSectionLabel.setFont(new Font(FONT_ARIAL, Font.BOLD, 12));
         tierSectionLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
         mainContentPanel.add(tierSectionLabel);
 
@@ -633,7 +634,7 @@ public class EveMinerAnalyzer extends JFrame {
         JLabel optimalRangeSectionLabel =
                 new JLabel("Optimal Range Modifier (applies when tier has '+'):");
         optimalRangeSectionLabel.setForeground(themeManager.getFgColor());
-        optimalRangeSectionLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        optimalRangeSectionLabel.setFont(new Font(FONT_ARIAL, Font.BOLD, 12));
         optimalRangeSectionLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
         mainContentPanel.add(optimalRangeSectionLabel);
 
@@ -666,63 +667,8 @@ public class EveMinerAnalyzer extends JFrame {
         buttonPanel.setBackground(themeManager.getBgColor());
 
         JButton saveButton = new JButton("Save");
-        saveButton.addActionListener(e -> {
-            Map<String, Double> newTierModifiers = new java.util.HashMap<>();
-            boolean hasError = false;
-            StringBuilder errorMessage = new StringBuilder("Invalid values:\n");
-
-            // Validate and collect tier modifier values
-            for (String tier : tiers) {
-                JTextField textField = tierTextFields.get(tier);
-                String text = textField.getText().trim();
-                if (text.isEmpty()) {
-                    hasError = true;
-                    errorMessage.append(TIER_PREFIX).append(tier).append(" cannot be empty\n");
-                    continue;
-                }
-                try {
-                    double value = Double.parseDouble(text);
-                    newTierModifiers.put(tier, value);
-                } catch (NumberFormatException ignored) {
-                    hasError = true;
-                    errorMessage.append(TIER_PREFIX).append(tier)
-                            .append(": invalid number format\n");
-                }
-            }
-
-            // Validate optimal range modifier
-            String optimalRangeText = optimalRangeTextField.getText().trim();
-            if (optimalRangeText.isEmpty()) {
-                hasError = true;
-                errorMessage.append("Optimal Range Modifier cannot be empty\n");
-            } else {
-                try {
-                    double value = Double.parseDouble(optimalRangeText);
-                    if (value < 0) {
-                        hasError = true;
-                        errorMessage.append("Optimal Range Modifier cannot be negative\n");
-                    }
-                } catch (NumberFormatException ignored) {
-                    hasError = true;
-                    errorMessage.append("Optimal Range Modifier: invalid number format\n");
-                }
-            }
-
-            if (!hasError) {
-                // Save both modifiers
-                TierModifierManager.saveTierModifiers(newTierModifiers);
-                OptimalRangeModifierManager
-                        .saveOptimalRangeModifier(Double.parseDouble(optimalRangeText));
-                dialog.dispose();
-                JOptionPane.showMessageDialog(this, "Modifiers saved successfully.",
-                        "Settings Saved", JOptionPane.INFORMATION_MESSAGE);
-                // Update sell price if analysis is displayed
-                updateSellPriceIfNeeded();
-            } else {
-                JOptionPane.showMessageDialog(dialog, errorMessage.toString(), INVALID_INPUT,
-                        JOptionPane.ERROR_MESSAGE);
-            }
-        });
+        saveButton.addActionListener(
+                e -> handleSaveTierModifiers(dialog, tierTextFields, optimalRangeTextField, tiers));
 
         JButton cancelButton = new JButton("Cancel");
         cancelButton.addActionListener(e -> dialog.dispose());
@@ -733,6 +679,102 @@ public class EveMinerAnalyzer extends JFrame {
 
         dialog.add(dialogPanel);
         dialog.setVisible(true);
+    }
+
+    private void handleSaveTierModifiers(JDialog dialog, Map<String, JTextField> tierTextFields,
+            JTextField optimalRangeTextField, String[] tiers) {
+        ValidationResult result =
+                validateTierModifiers(tierTextFields, optimalRangeTextField, tiers);
+
+        if (result.isValid()) {
+            TierModifierManager.saveTierModifiers(result.getTierModifiers());
+            OptimalRangeModifierManager.saveOptimalRangeModifier(result.getOptimalRangeModifier());
+            dialog.dispose();
+            JOptionPane.showMessageDialog(this, "Modifiers saved successfully.", "Settings Saved",
+                    JOptionPane.INFORMATION_MESSAGE);
+            updateSellPriceIfNeeded();
+        } else {
+            JOptionPane.showMessageDialog(dialog, result.getErrorMessage(), INVALID_INPUT,
+                    JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private ValidationResult validateTierModifiers(Map<String, JTextField> tierTextFields,
+            JTextField optimalRangeTextField, String[] tiers) {
+        Map<String, Double> newTierModifiers = new java.util.HashMap<>();
+        StringBuilder errorMessage = new StringBuilder("Invalid values:\n");
+        boolean hasError = false;
+
+        // Validate tier modifiers
+        for (String tier : tiers) {
+            JTextField textField = tierTextFields.get(tier);
+            String text = textField.getText().trim();
+            if (text.isEmpty()) {
+                hasError = true;
+                errorMessage.append(TIER_PREFIX).append(tier).append(" cannot be empty\n");
+                continue;
+            }
+            try {
+                double value = Double.parseDouble(text);
+                newTierModifiers.put(tier, value);
+            } catch (NumberFormatException ignored) {
+                hasError = true;
+                errorMessage.append(TIER_PREFIX).append(tier).append(": invalid number format\n");
+            }
+        }
+
+        // Validate optimal range modifier
+        String optimalRangeText = optimalRangeTextField.getText().trim();
+        double optimalRangeValue = 0.0;
+        if (optimalRangeText.isEmpty()) {
+            hasError = true;
+            errorMessage.append("Optimal Range Modifier cannot be empty\n");
+        } else {
+            try {
+                optimalRangeValue = Double.parseDouble(optimalRangeText);
+                if (optimalRangeValue < 0) {
+                    hasError = true;
+                    errorMessage.append("Optimal Range Modifier cannot be negative\n");
+                }
+            } catch (NumberFormatException ignored) {
+                hasError = true;
+                errorMessage.append("Optimal Range Modifier: invalid number format\n");
+            }
+        }
+
+        return new ValidationResult(!hasError, newTierModifiers, optimalRangeValue,
+                errorMessage.toString());
+    }
+
+    private static class ValidationResult {
+        private final boolean valid;
+        private final Map<String, Double> tierModifiers;
+        private final double optimalRangeModifier;
+        private final String errorMessage;
+
+        ValidationResult(boolean valid, Map<String, Double> tierModifiers,
+                double optimalRangeModifier, String errorMessage) {
+            this.valid = valid;
+            this.tierModifiers = tierModifiers;
+            this.optimalRangeModifier = optimalRangeModifier;
+            this.errorMessage = errorMessage;
+        }
+
+        boolean isValid() {
+            return valid;
+        }
+
+        Map<String, Double> getTierModifiers() {
+            return tierModifiers;
+        }
+
+        double getOptimalRangeModifier() {
+            return optimalRangeModifier;
+        }
+
+        String getErrorMessage() {
+            return errorMessage;
+        }
     }
 
     private void updateSellPriceIfNeeded() {

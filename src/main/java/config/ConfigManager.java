@@ -18,6 +18,13 @@ public class ConfigManager {
     private static final String OPTIMAL_RANGE_MODIFIER_FILE = "optimal_range_modifier.txt";
 
     /**
+     * Private constructor to prevent instantiation of utility class
+     */
+    private ConfigManager() {
+        // Utility class - no instantiation
+    }
+
+    /**
      * Converts a URL location to a File, handling URISyntaxException
      * 
      * @param location The URL location to convert
@@ -26,8 +33,8 @@ public class ConfigManager {
     private static File urlToFile(java.net.URL location) {
         try {
             return new File(location.toURI());
-                } catch (java.net.URISyntaxException ignored) {
-                    // If URI conversion fails, try getting path directly
+        } catch (java.net.URISyntaxException ignored) {
+            // If URI conversion fails, try getting path directly
             String path = location.getPath();
             // Handle Windows paths: remove leading / if present (e.g., /C:/path -> C:/path)
             if (System.getProperty("os.name").toLowerCase().startsWith("windows")

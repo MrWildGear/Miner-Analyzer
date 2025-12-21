@@ -29,6 +29,9 @@ public class ItemStatsParser {
     // Pattern for time format: Xm Ys or XmYs
     private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)\\s*m\\s*(\\d+)\\s*s", Pattern.CASE_INSENSITIVE);
     private static final Pattern COMPACT_TIME_PATTERN = Pattern.compile("(\\d+)m(\\d+)s", Pattern.CASE_INSENSITIVE);
+    
+    // Pattern for validating that a value starts with a digit
+    private static final String PATTERN_STARTS_WITH_DIGIT = "^\\d.*";
 
     /**
      * Parses item stats from clipboard text
@@ -68,7 +71,7 @@ public class ItemStatsParser {
         if (matcher.find()) {
             // Verify the value part looks valid (starts with digit or is time format)
             String valuePart = matcher.group(2).trim();
-            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+            if (valuePart.matches(PATTERN_STARTS_WITH_DIGIT) || TIME_PATTERN.matcher(valuePart).find() 
                     || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
                 return matcher;
             }
@@ -78,7 +81,7 @@ public class ItemStatsParser {
         if (matcher.find()) {
             // Verify the value part looks valid (starts with digit or is time format)
             String valuePart = matcher.group(2).trim();
-            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+            if (valuePart.matches(PATTERN_STARTS_WITH_DIGIT) || TIME_PATTERN.matcher(valuePart).find() 
                     || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
                 return matcher;
             }
@@ -89,7 +92,7 @@ public class ItemStatsParser {
             // Verify the value part looks valid (starts with digit or is time format)
             // This is last because it's the least specific
             String valuePart = matcher.group(2).trim();
-            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+            if (valuePart.matches(PATTERN_STARTS_WITH_DIGIT) || TIME_PATTERN.matcher(valuePart).find() 
                     || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
                 return matcher;
             }
@@ -125,7 +128,7 @@ public class ItemStatsParser {
 
             // Extract numeric value from the string
             // Handle comma-separated numbers (e.g., "1,000 m3" -> 1000)
-            valueStr = valueStr.replaceAll(",", ""); // Remove commas
+            valueStr = valueStr.replace(",", ""); // Remove commas
             
             // Extract number pattern (digits and decimal point)
             // This handles formats like "1000 m3", "12.5 km", etc.

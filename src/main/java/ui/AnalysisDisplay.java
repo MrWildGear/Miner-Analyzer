@@ -219,7 +219,7 @@ public class AnalysisDisplay {
 
             // Calculate and display sell price
             if (sellPriceUpdater != null) {
-                sellPriceUpdater.accept(calculateSellPrice(analysis, baseM3Pct, minerType));
+                sellPriceUpdater.accept(calculateSellPrice(analysis, baseM3Pct));
             }
 
         } catch (BadLocationException e) {
@@ -230,7 +230,8 @@ public class AnalysisDisplay {
     private void displayHeader(String minerType) {
         appendStyledText(repeat("=", 76) + "\n", STYLE_HEADER);
         String minerTypeLabel = MINER_TYPE_ICE.equals(minerType) ? "Ice Harvester" : "Strip Miner";
-        appendStyledText("EVE Online " + minerType + " " + minerTypeLabel + " Roll Analyzer\n", STYLE_HEADER);
+        appendStyledText("EVE Online " + minerType + " " + minerTypeLabel + " Roll Analyzer\n",
+                STYLE_HEADER);
         appendStyledText(repeat("=", 76) + "\n\n", STYLE_HEADER);
     }
 
@@ -461,7 +462,7 @@ public class AnalysisDisplay {
             tierDisplay = TIER_F;
         } else if (TIER_S.equals(tier) || "S+".equals(tier)) {
             // Handle S tier - show as +S in clipboard
-            tierDisplay = tier.endsWith("+") ? "+S" : "+S";
+            tierDisplay = "+S";
         } else {
             // For other tiers, keep the "+" suffix if present
             tierDisplay = tier;
@@ -588,9 +589,10 @@ public class AnalysisDisplay {
     }
 
     /**
-     * Calculates sell price based on formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if tier has "+")
+     * Calculates sell price based on formula: cost * tier_modifier * (100% + baseM3Pct%) *
+     * optimal_range_modifier (if tier has "+")
      */
-    private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct, String minerType) {
+    private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct) {
         double cost = ConfigManager.getRollCost();
         if (cost <= 0) {
             return 0.0;
@@ -607,7 +609,8 @@ public class AnalysisDisplay {
             optimalRangeModifier = OptimalRangeModifierManager.loadOptimalRangeModifier();
         }
 
-        // Formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if applicable)
+        // Formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if
+        // applicable)
         // baseM3Pct is already a percentage, so convert to multiplier: 1 + (baseM3Pct / 100)
         double m3Multiplier = 1.0 + (baseM3Pct / 100.0);
         return cost * tierModifier * m3Multiplier * optimalRangeModifier;
