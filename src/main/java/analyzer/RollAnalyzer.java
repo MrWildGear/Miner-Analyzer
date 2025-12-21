@@ -84,7 +84,17 @@ public class RollAnalyzer {
         }
 
         // Determine tier
-        result.setTier(determineTier(result.getM3PerSec(), minerType));
+        String tier = determineTier(result.getM3PerSec(), minerType);
+        
+        // Check if optimal range is increased and add "+" suffix for tiers above F
+        Double rolledOptimalRange = mutatedStats.get("OptimalRange");
+        Double baseOptimalRange = baseStats.get("OptimalRange");
+        if (rolledOptimalRange != null && baseOptimalRange != null 
+                && rolledOptimalRange > baseOptimalRange && !"F".equals(tier)) {
+            tier = tier + "+";
+        }
+        
+        result.setTier(tier);
 
         return result;
     }

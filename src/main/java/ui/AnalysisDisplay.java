@@ -10,6 +10,7 @@ import javax.swing.text.StyledDocument;
 import calculator.MiningCalculator;
 import config.ConfigManager;
 import config.MinerConfig;
+import config.OptimalRangeModifierManager;
 import config.TierModifierManager;
 import model.AnalysisResult;
 
@@ -218,7 +219,7 @@ public class AnalysisDisplay {
 
             // Calculate and display sell price
             if (sellPriceUpdater != null) {
-                sellPriceUpdater.accept(calculateSellPrice(analysis, baseM3Pct));
+                sellPriceUpdater.accept(calculateSellPrice(analysis, baseM3Pct, minerType));
             }
 
         } catch (BadLocationException e) {
@@ -418,12 +419,15 @@ public class AnalysisDisplay {
 
     private void displayTierSection(AnalysisResult analysis, String minerType) {
         String tier = analysis.getTier() != null ? analysis.getTier() : TIER_F;
-        String tierRangeStr = formatTierRange(tier, minerType);
+        // Strip "+" suffix for tier range lookup
+        String tierForLookup = tier.endsWith("+") ? tier.substring(0, tier.length() - 1) : tier;
+        String tierRangeStr = formatTierRange(tierForLookup, minerType);
 
         appendStyledText("Tier: ", STYLE_HEADER);
-        appendStyledText(tier + "\n", TIER_STYLE_PREFIX + tier);
+        // Use tierForLookup for style lookup, but display full tier with "+" if present
+        appendStyledText(tier + "\n", TIER_STYLE_PREFIX + tierForLookup);
         if (!tierRangeStr.isEmpty()) {
-            appendStyledText("(" + tierRangeStr + ")\n", TIER_STYLE_PREFIX + tier);
+            appendStyledText("(" + tierRangeStr + ")\n", TIER_STYLE_PREFIX + tierForLookup);
         }
         appendText("\n" + repeat("=", 76) + "\n", fgColor);
     }
@@ -453,10 +457,14 @@ public class AnalysisDisplay {
 
     private void copyToClipboard(String tier, String minerType, double baseM3Pct) {
         String tierDisplay;
-        if (TIER_S.equals(tier)) {
-            tierDisplay = "+S";
+        if (tier == null) {
+            tierDisplay = TIER_F;
+        } else if (TIER_S.equals(tier) || "S+".equals(tier)) {
+            // Handle S tier - show as +S in clipboard
+            tierDisplay = tier.endsWith("+") ? "+S" : "+S";
         } else {
-            tierDisplay = tier != null ? tier : TIER_F;
+            // For other tiers, keep the "+" suffix if present
+            tierDisplay = tier;
         }
         String minerLabel;
         if (MINER_TYPE_ORE.equals(minerType)) {
@@ -580,21 +588,29 @@ public class AnalysisDisplay {
     }
 
     /**
-     * Calculates sell price based on formula: cost * tier_modifier * (100% + baseM3Pct%)
+     * Calculates sell price based on formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if tier has "+")
      */
-    private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct) {
+    private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct, String minerType) {
         double cost = ConfigManager.getRollCost();
         if (cost <= 0) {
             return 0.0;
         }
 
         String tier = analysis.getTier() != null ? analysis.getTier() : "F";
-        double tierModifier = TierModifierManager.getModifierForTier(tier);
+        // Remove "+" suffix if present for tier modifier lookup
+        String tierForModifier = tier.endsWith("+") ? tier.substring(0, tier.length() - 1) : tier;
+        double tierModifier = TierModifierManager.getModifierForTier(tierForModifier);
 
-        // Formula: cost * tier_modifier * (100% + baseM3Pct%)
+        // Check if tier has "+" suffix (optimal range increased) and apply modifier
+        double optimalRangeModifier = 1.0;
+        if (tier.endsWith("+")) {
+            optimalRangeModifier = OptimalRangeModifierManager.loadOptimalRangeModifier();
+        }
+
+        // Formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if applicable)
         // baseM3Pct is already a percentage, so convert to multiplier: 1 + (baseM3Pct / 100)
         double m3Multiplier = 1.0 + (baseM3Pct / 100.0);
-        return cost * tierModifier * m3Multiplier;
+        return cost * tierModifier * m3Multiplier * optimalRangeModifier;
     }
 }
 
