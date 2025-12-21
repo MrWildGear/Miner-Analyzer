@@ -23,7 +23,7 @@ public class RollAnalyzer {
      * 
      * @param stats Parsed stats from clipboard
      * @param baseStats Base stats for the miner type
-     * @param minerType "ORE" or "Modulated"
+     * @param minerType "ORE", "Modulated", or "Ice"
      * @return AnalysisResult with all calculated metrics and tier
      */
     public static AnalysisResult analyzeRoll(Map<String, Double> stats,
@@ -53,7 +53,8 @@ public class RollAnalyzer {
         Double residueMult = mutatedStats.getOrDefault("ResidueVolumeMultiplier", 0.0);
 
         // Calculate effective m3/sec
-        if ("ORE".equals(minerType)) {
+        // ORE and Ice don't have residue, Modulated does
+        if ("ORE".equals(minerType) || "Ice".equals(minerType)) {
             result.setEffectiveM3PerSec(MiningCalculator.calculateEffectiveM3PerSec(miningAmount,
                     activationTime, critChance, critBonus, 0.0, 0.0));
             result.setBasePlusCritsM3PerSec(null);
@@ -68,7 +69,7 @@ public class RollAnalyzer {
         result.setRealWorldM3PerSec(
                 MiningCalculator.calculateRealWorldBaseM3PerSec(miningAmount, activationTime));
 
-        if ("ORE".equals(minerType)) {
+        if ("ORE".equals(minerType) || "Ice".equals(minerType)) {
             result.setRealWorldEffectiveM3PerSec(
                     MiningCalculator.calculateRealWorldEffectiveM3PerSec(miningAmount,
                             activationTime, critChance, critBonus, 0.0, 0.0));

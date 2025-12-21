@@ -18,12 +18,17 @@ public class ItemStatsParser {
     }
 
     // Patterns for different text formats
+    // Capture the value part completely (numbers with commas, time formats, etc.)
     private static final Pattern PATTERN_TAB_SEPARATED =
-            Pattern.compile("^(.+?)\\t+(\\d+\\.?\\d*)");
+            Pattern.compile("^(.+?)\\t+(.+)$");
     private static final Pattern PATTERN_SPACE_SEPARATED =
-            Pattern.compile("^(.+?)\\s+(\\d+\\.?\\d*)");
+            Pattern.compile("^(.+?)\\s+(.+)$");
     private static final Pattern PATTERN_MULTIPLE_SPACES =
-            Pattern.compile("^(.+?)\\s{2,}(\\d+\\.?\\d*)");
+            Pattern.compile("^(.+?)\\s{2,}(.+)$");
+    
+    // Pattern for time format: Xm Ys or XmYs
+    private static final Pattern TIME_PATTERN = Pattern.compile("(\\d+)\\s*m\\s*(\\d+)\\s*s", Pattern.CASE_INSENSITIVE);
+    private static final Pattern COMPACT_TIME_PATTERN = Pattern.compile("(\\d+)m(\\d+)s", Pattern.CASE_INSENSITIVE);
 
     /**
      * Parses item stats from clipboard text
@@ -61,17 +66,33 @@ public class ItemStatsParser {
     private static Matcher findMatcherForLine(String line) {
         Matcher matcher = PATTERN_TAB_SEPARATED.matcher(line);
         if (matcher.find()) {
-            return matcher;
-        }
-
-        matcher = PATTERN_SPACE_SEPARATED.matcher(line);
-        if (matcher.find()) {
-            return matcher;
+            // Verify the value part looks valid (starts with digit or is time format)
+            String valuePart = matcher.group(2).trim();
+            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+                    || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
+                return matcher;
+            }
         }
 
         matcher = PATTERN_MULTIPLE_SPACES.matcher(line);
         if (matcher.find()) {
-            return matcher;
+            // Verify the value part looks valid (starts with digit or is time format)
+            String valuePart = matcher.group(2).trim();
+            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+                    || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
+                return matcher;
+            }
+        }
+
+        matcher = PATTERN_SPACE_SEPARATED.matcher(line);
+        if (matcher.find()) {
+            // Verify the value part looks valid (starts with digit or is time format)
+            // This is last because it's the least specific
+            String valuePart = matcher.group(2).trim();
+            if (valuePart.matches("^\\d.*") || TIME_PATTERN.matcher(valuePart).find() 
+                    || COMPACT_TIME_PATTERN.matcher(valuePart).find()) {
+                return matcher;
+            }
         }
 
         return null;
@@ -87,22 +108,72 @@ public class ItemStatsParser {
         try {
             String label = matcher.group(1).trim();
             String valueStr = matcher.group(2).trim();
-            // Remove any trailing units or characters (keep decimal point)
-            valueStr = valueStr.replaceAll("[^0-9.]", "");
-            if (valueStr.isEmpty()) {
+            String statName = matchStatName(label.toLowerCase());
+
+            if (statName == null) {
                 return;
             }
 
-            double numValue = Double.parseDouble(valueStr);
-            String statName = matchStatName(label.toLowerCase());
+            // Special handling for ActivationTime - check for time format (Xm Ys)
+            if ("ActivationTime".equals(statName)) {
+                Double timeValue = parseTimeFormat(valueStr);
+                if (timeValue != null) {
+                    stats.put(statName, timeValue);
+                    return;
+                }
+            }
 
-            if (statName != null) {
+            // Extract numeric value from the string
+            // Handle comma-separated numbers (e.g., "1,000 m3" -> 1000)
+            valueStr = valueStr.replaceAll(",", ""); // Remove commas
+            
+            // Extract number pattern (digits and decimal point)
+            // This handles formats like "1000 m3", "12.5 km", etc.
+            java.util.regex.Pattern numberPattern = Pattern.compile("(\\d+(?:\\.\\d+)?)");
+            Matcher numberMatcher = numberPattern.matcher(valueStr);
+            
+            if (numberMatcher.find()) {
+                String numberStr = numberMatcher.group(1);
+                double numValue = Double.parseDouble(numberStr);
                 double statValue = getStatValue(statName, numValue);
                 stats.put(statName, statValue);
             }
         } catch (NumberFormatException ignored) {
             // Skip lines that can't be parsed - this is normal
         }
+    }
+
+    /**
+     * Parses time format like "3m 20s" or "3m20s" and converts to seconds
+     * 
+     * @param timeStr The time string to parse
+     * @return The time in seconds, or null if format doesn't match
+     */
+    private static Double parseTimeFormat(String timeStr) {
+        // Try format with spaces: "3m 20s"
+        Matcher timeMatcher = TIME_PATTERN.matcher(timeStr);
+        if (timeMatcher.find()) {
+            try {
+                int minutes = Integer.parseInt(timeMatcher.group(1));
+                int seconds = Integer.parseInt(timeMatcher.group(2));
+                return (double) (minutes * 60 + seconds);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        
+        // Try compact format without spaces: "3m20s"
+        Matcher compactMatcher = COMPACT_TIME_PATTERN.matcher(timeStr);
+        if (compactMatcher.find()) {
+            try {
+                int minutes = Integer.parseInt(compactMatcher.group(1));
+                int seconds = Integer.parseInt(compactMatcher.group(2));
+                return (double) (minutes * 60 + seconds);
+            } catch (NumberFormatException ignored) {
+                return null;
+            }
+        }
+        return null;
     }
 
     /**
@@ -155,4 +226,5 @@ public class ItemStatsParser {
         return numValue;
     }
 }
+
 

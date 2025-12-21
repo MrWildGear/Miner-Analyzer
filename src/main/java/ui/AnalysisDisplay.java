@@ -35,6 +35,7 @@ public class AnalysisDisplay {
     // Miner type constants
     private static final String MINER_TYPE_MODULATED = "Modulated";
     private static final String MINER_TYPE_ORE = "ORE";
+    private static final String MINER_TYPE_ICE = "Ice";
 
     // Tier constants
     private static final String TIER_S = "S";
@@ -227,7 +228,8 @@ public class AnalysisDisplay {
 
     private void displayHeader(String minerType) {
         appendStyledText(repeat("=", 76) + "\n", STYLE_HEADER);
-        appendStyledText("EVE Online " + minerType + " Strip Miner Roll Analyzer\n", STYLE_HEADER);
+        String minerTypeLabel = MINER_TYPE_ICE.equals(minerType) ? "Ice Harvester" : "Strip Miner";
+        appendStyledText("EVE Online " + minerType + " " + minerTypeLabel + " Roll Analyzer\n", STYLE_HEADER);
         appendStyledText(repeat("=", 76) + "\n\n", STYLE_HEADER);
     }
 
@@ -456,7 +458,14 @@ public class AnalysisDisplay {
         } else {
             tierDisplay = tier != null ? tier : TIER_F;
         }
-        String minerLabel = MINER_TYPE_ORE.equals(minerType) ? "[ORE]" : "[Modulated]";
+        String minerLabel;
+        if (MINER_TYPE_ORE.equals(minerType)) {
+            minerLabel = "[ORE]";
+        } else if (MINER_TYPE_ICE.equals(minerType)) {
+            minerLabel = "[Ice]";
+        } else {
+            minerLabel = "[Modulated]";
+        }
         String clipboardText =
                 tierDisplay + ": (" + formatPercentage(baseM3Pct) + ") " + minerLabel;
         try {
