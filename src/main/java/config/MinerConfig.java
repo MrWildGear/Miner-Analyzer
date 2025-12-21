@@ -4,8 +4,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Configuration class containing base stats, tier ranges, and bonuses for ORE Strip Miner and
- * Modulated Strip Miner II
+ * Configuration class containing base stats, tier ranges, and bonuses for ORE Strip Miner,
+ * Modulated Strip Miner II, and ORE Ice Harvester
  */
 public class MinerConfig {
 
@@ -22,6 +22,7 @@ public class MinerConfig {
 
     private static final Map<String, Double> ORE_BASE_STATS = new HashMap<>();
     private static final Map<String, Double> MODULATED_BASE_STATS = new HashMap<>();
+    private static final Map<String, Double> ICE_BASE_STATS = new HashMap<>();
 
     // ============================================================================
     // TIER RANGES
@@ -29,6 +30,7 @@ public class MinerConfig {
 
     private static final Map<String, Map<String, Double>> ORE_TIER_RANGES = new HashMap<>();
     private static final Map<String, Map<String, Double>> MODULATED_TIER_RANGES = new HashMap<>();
+    private static final Map<String, Map<String, Double>> ICE_TIER_RANGES = new HashMap<>();
 
     // ============================================================================
     // BONUSES
@@ -44,8 +46,10 @@ public class MinerConfig {
     static {
         initializeOreBaseStats();
         initializeModulatedBaseStats();
+        initializeIceBaseStats();
         initializeOreTierRanges();
         initializeModulatedTierRanges();
+        initializeIceTierRanges();
     }
 
     private static void initializeOreBaseStats() {
@@ -77,6 +81,23 @@ public class MinerConfig {
         MODULATED_BASE_STATS.put("TechLevel", 2.0);
         MODULATED_BASE_STATS.put("CriticalSuccessBonusYield", 2.0);
         MODULATED_BASE_STATS.put("MetaLevel", 5.0);
+    }
+
+    private static void initializeIceBaseStats() {
+        // ORE Ice Harvester base stats
+        // Activation time: 3m 20s = 200 seconds
+        ICE_BASE_STATS.put("ActivationCost", 12.0);
+        ICE_BASE_STATS.put("StructureHitpoints", 40.0);
+        ICE_BASE_STATS.put("Volume", 5.0);
+        ICE_BASE_STATS.put("OptimalRange", 12.50);
+        ICE_BASE_STATS.put("ActivationTime", 200.0); // 3m 20s = 200s
+        ICE_BASE_STATS.put("MiningAmount", 1000.0);
+        ICE_BASE_STATS.put("CriticalSuccessChance", 0.01); // 1%
+        ICE_BASE_STATS.put("CriticalSuccessBonusYield", 2.0); // 200%
+        ICE_BASE_STATS.put("ResidueProbability", 0.0);
+        ICE_BASE_STATS.put("ResidueVolumeMultiplier", 0.0);
+        ICE_BASE_STATS.put("TechLevel", 1.0);
+        ICE_BASE_STATS.put("MetaLevel", 6.0);
     }
 
     private static void initializeOreTierRanges() {
@@ -153,6 +174,44 @@ public class MinerConfig {
         MODULATED_TIER_RANGES.put("F", modFRange);
     }
 
+    private static void initializeIceTierRanges() {
+        // Ice tier ranges based on m³/sec
+        Map<String, Double> sRange = new HashMap<>();
+        sRange.put("Min", 7.033);
+        sRange.put("Max", 7.44);
+        ICE_TIER_RANGES.put("S", sRange);
+
+        Map<String, Double> aRange = new HashMap<>();
+        aRange.put("Min", 6.627);
+        aRange.put("Max", 7.033);
+        ICE_TIER_RANGES.put("A", aRange);
+
+        Map<String, Double> bRange = new HashMap<>();
+        bRange.put("Min", 6.220);
+        bRange.put("Max", 6.627);
+        ICE_TIER_RANGES.put("B", bRange);
+
+        Map<String, Double> cRange = new HashMap<>();
+        cRange.put("Min", 5.813);
+        cRange.put("Max", 6.220);
+        ICE_TIER_RANGES.put("C", cRange);
+
+        Map<String, Double> dRange = new HashMap<>();
+        dRange.put("Min", 5.407);
+        dRange.put("Max", 5.813);
+        ICE_TIER_RANGES.put("D", dRange);
+
+        Map<String, Double> eRange = new HashMap<>();
+        eRange.put("Min", 5.000);
+        eRange.put("Max", 5.407);
+        ICE_TIER_RANGES.put("E", eRange);
+
+        Map<String, Double> fRange = new HashMap<>();
+        fRange.put("Min", 0.0);
+        fRange.put("Max", 5.000);
+        ICE_TIER_RANGES.put("F", fRange);
+    }
+
     // ============================================================================
     // PUBLIC GETTERS
     // ============================================================================
@@ -165,9 +224,15 @@ public class MinerConfig {
         return new HashMap<>(MODULATED_BASE_STATS);
     }
 
+    public static Map<String, Double> getIceBaseStats() {
+        return new HashMap<>(ICE_BASE_STATS);
+    }
+
     public static Map<String, Double> getBaseStats(String minerType) {
         if ("ORE".equals(minerType)) {
             return getOreBaseStats();
+        } else if ("Ice".equals(minerType)) {
+            return getIceBaseStats();
         } else {
             return getModulatedBaseStats();
         }
@@ -191,9 +256,20 @@ public class MinerConfig {
         return copy;
     }
 
+    public static Map<String, Map<String, Double>> getIceTierRanges() {
+        // Return deep copy to prevent modification
+        Map<String, Map<String, Double>> copy = new HashMap<>();
+        for (Map.Entry<String, Map<String, Double>> entry : ICE_TIER_RANGES.entrySet()) {
+            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
+        }
+        return copy;
+    }
+
     public static Map<String, Map<String, Double>> getTierRanges(String minerType) {
         if ("ORE".equals(minerType)) {
             return getOreTierRanges();
+        } else if ("Ice".equals(minerType)) {
+            return getIceTierRanges();
         } else {
             return getModulatedTierRanges();
         }

@@ -37,12 +37,12 @@ import ui.ThemeManager;
 
 /**
  * EVE Online Strip Miner Roll Analyzer Reads item stats from clipboard and calculates m3/sec with
- * mutation ranges Supports both ORE Strip Miner and Modulated Strip Miner II
+ * mutation ranges Supports ORE Strip Miner, Modulated Strip Miner II, and ORE Ice Harvester
  * 
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.3.7";
+    private static final String VERSION = "1.4.3";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
@@ -51,6 +51,7 @@ public class EveMinerAnalyzer extends JFrame {
     // UI Components
     private JRadioButton oreRadio;
     private JRadioButton modulatedRadio;
+    private JRadioButton iceRadio;
     private JLabel statusLabel;
     private JTextPane resultsText;
     private transient StyledDocument doc;
@@ -212,6 +213,17 @@ public class EveMinerAnalyzer extends JFrame {
         typeGroup.add(modulatedRadio);
         typePanel.add(modulatedRadio);
 
+        iceRadio = new JRadioButton("Ice");
+        iceRadio.setBackground(themeManager.getBgColor());
+        iceRadio.setForeground(themeManager.getFgColor());
+        iceRadio.addActionListener(e -> {
+            minerType = "Ice";
+            clearResults();
+            restartClipboardMonitoring();
+        });
+        typeGroup.add(iceRadio);
+        typePanel.add(iceRadio);
+
         headerPanel.add(typePanel, BorderLayout.CENTER);
 
         // Sell price panel
@@ -343,6 +355,10 @@ public class EveMinerAnalyzer extends JFrame {
         if (modulatedRadio != null) {
             modulatedRadio.setBackground(themeManager.getBgColor());
             modulatedRadio.setForeground(themeManager.getFgColor());
+        }
+        if (iceRadio != null) {
+            iceRadio.setBackground(themeManager.getBgColor());
+            iceRadio.setForeground(themeManager.getFgColor());
         }
     }
 
@@ -694,8 +710,8 @@ public class EveMinerAnalyzer extends JFrame {
     private void showAboutDialog() {
         String message = APP_NAME + "\n" + "Version " + VERSION + "\n\n"
                 + "Analyzes EVE Online Strip Miner rolls by monitoring clipboard.\n"
-                + "Supports ORE Strip Miner and Modulated Strip Miner II.\n\n" + "Usage:\n"
-                + "1. Select miner type (ORE or Modulated)\n"
+                + "Supports ORE Strip Miner, Modulated Strip Miner II, and ORE Ice Harvester.\n\n"
+                + "Usage:\n" + "1. Select miner type (ORE, Modulated, or Ice)\n"
                 + "2. Copy item stats from EVE Online (Ctrl+C on item info)\n"
                 + "3. Analysis appears automatically\n\n"
                 + "Tier info is automatically copied to clipboard for easy container naming.";
