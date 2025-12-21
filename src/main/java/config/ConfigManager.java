@@ -25,7 +25,7 @@ public class ConfigManager {
     private static File urlToFile(java.net.URL location) {
         try {
             return new File(location.toURI());
-                } catch (java.net.URISyntaxException _) {
+                } catch (java.net.URISyntaxException ignored) {
                     // If URI conversion fails, try getting path directly
             String path = location.getPath();
             // Handle Windows paths: remove leading / if present (e.g., /C:/path -> C:/path)
@@ -77,7 +77,7 @@ public class ConfigManager {
             if (baseDir != null && baseDir.exists()) {
                 return ensureConfigDirectoryExists(baseDir, CONFIG_DIR_NAME);
             }
-        } catch (Exception _) {
+        } catch (Exception ignored) {
             // Fallback to current directory
         }
         return null;
@@ -117,7 +117,7 @@ public class ConfigManager {
                 line = line.trim();
                 return Double.parseDouble(line);
             }
-        } catch (IOException | NumberFormatException _) {
+        } catch (IOException | NumberFormatException ignored) {
             // Return default value on error
         }
 
@@ -135,7 +135,7 @@ public class ConfigManager {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(costFile))) {
             writer.write(String.valueOf(cost));
-        } catch (IOException _) {
+        } catch (IOException ignored) {
             // Silently fail - config saving is not critical
         }
     }
