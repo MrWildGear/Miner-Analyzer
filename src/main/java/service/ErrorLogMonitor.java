@@ -30,7 +30,8 @@ public class ErrorLogMonitor implements AutoCloseable {
 
     private volatile Timer monitorTimer;
     private volatile boolean isRunning = false;
-    private long lastFilePosition = 0;
+    private int lastLineCount = 0; // Track lines processed instead of byte position
+    private long lastFileSize = 0; // Track file size for truncation detection
     private final File logFile;
 
     // Error statistics
@@ -78,20 +79,23 @@ public class ErrorLogMonitor implements AutoCloseable {
     private void initializeLastPosition() {
         if (logFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-                long position = 0;
+                int lineCount = 0;
                 while (reader.readLine() != null) {
-                    position = getFileSize();
+                    lineCount++;
                 }
-                lastFilePosition = position;
+                lastLineCount = lineCount;
+                lastFileSize = getFileSize();
 
                 // Count existing errors for statistics
                 countExistingErrors();
             } catch (IOException e) {
                 // If we can't read, start from beginning
-                lastFilePosition = 0;
+                lastLineCount = 0;
+                lastFileSize = 0;
             }
         } else {
-            lastFilePosition = 0;
+            lastLineCount = 0;
+            lastFileSize = 0;
         }
     }
 
@@ -169,37 +173,50 @@ public class ErrorLogMonitor implements AutoCloseable {
     private void checkForNewErrors() {
         if (!logFile.exists()) {
             // File doesn't exist yet, reset position
-            lastFilePosition = 0;
+            lastLineCount = 0;
+            lastFileSize = 0;
             return;
         }
 
         long currentSize = getFileSize();
 
         // File was truncated or deleted, reset position
-        if (currentSize < lastFilePosition) {
-            lastFilePosition = 0;
+        if (currentSize < lastFileSize) {
+            lastLineCount = 0;
+            lastFileSize = currentSize;
         }
 
         // No new content
-        if (currentSize <= lastFilePosition) {
+        if (currentSize <= lastFileSize) {
             return;
         }
 
-        // Read new content
+        // Read new content using line-based positioning (more reliable for text files)
         try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
-            // Skip to last known position
-            long skipped = reader.skip(lastFilePosition);
-            if (skipped != lastFilePosition) {
-                // Couldn't skip properly, read from beginning
-                reader.close();
-                try (BufferedReader newReader = new BufferedReader(new FileReader(logFile))) {
-                    processNewLines(newReader);
+            // Skip lines we've already processed by reading and discarding them
+            int linesToSkip = lastLineCount;
+            boolean fileWasTruncated = false;
+            for (int i = 0; i < linesToSkip; i++) {
+                if (reader.readLine() == null) {
+                    // File has fewer lines than expected (was truncated)
+                    fileWasTruncated = true;
+                    lastLineCount = 0;
+                    break;
                 }
-            } else {
-                processNewLines(reader);
             }
 
-            lastFilePosition = currentSize;
+            if (fileWasTruncated) {
+                // File was truncated, read entire file from beginning
+                try (BufferedReader newReader = new BufferedReader(new FileReader(logFile))) {
+                    int newLinesProcessed = processNewLines(newReader);
+                    lastLineCount = newLinesProcessed;
+                }
+            } else {
+                // Process new lines and count them
+                int newLinesProcessed = processNewLines(reader);
+                lastLineCount += newLinesProcessed;
+            }
+            lastFileSize = currentSize;
         } catch (IOException e) {
             // Don't log monitoring errors to avoid recursion
             // Just silently fail and try again next poll
@@ -210,14 +227,17 @@ public class ErrorLogMonitor implements AutoCloseable {
      * Processes new lines from the log file and detects errors.
      * 
      * @param reader BufferedReader positioned at the new content
+     * @return Number of lines processed
      */
-    private void processNewLines(BufferedReader reader) throws IOException {
+    private int processNewLines(BufferedReader reader) throws IOException {
         String line;
+        int lineCount = 0;
         StringBuilder errorBlock = new StringBuilder();
         LocalDateTime errorTimestamp = null;
         String errorMessage = null;
 
         while ((line = reader.readLine()) != null) {
+            lineCount++;
             Matcher matcher = ERROR_PATTERN.matcher(line);
             if (matcher.find()) {
                 // Found a new error entry
@@ -248,6 +268,8 @@ public class ErrorLogMonitor implements AutoCloseable {
         if (errorMessage != null) {
             processError(errorTimestamp, errorMessage);
         }
+
+        return lineCount;
     }
 
     /**
