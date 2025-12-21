@@ -5,10 +5,14 @@ import java.awt.Component;
 import java.awt.Container;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Map;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
+import javax.swing.JButton;
+import javax.swing.JDialog;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JMenu;
@@ -18,12 +22,15 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
+import javax.swing.JTextField;
 import javax.swing.JTextPane;
 import javax.swing.SwingUtilities;
 import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
+import config.ConfigManager;
+import config.TierModifierManager;
 import service.ClipboardMonitor;
 import ui.AnalysisDisplay;
 import ui.ThemeManager;
@@ -35,9 +42,11 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.2.18";
+    private static final String VERSION = "1.3.6";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
+    private static final String TIER_PREFIX = "Tier ";
+    private static final String INVALID_INPUT = "Invalid Input";
 
     // UI Components
     private JRadioButton oreRadio;
@@ -58,6 +67,12 @@ public class EveMinerAnalyzer extends JFrame {
     private JPanel headerPanel;
     private JPanel typePanel;
     private JMenuBar appMenuBar;
+
+    // Sell price components
+    private JPanel sellPricePanel;
+    private JLabel sellPriceLabel;
+    private JButton copySellPriceButton;
+    private double currentSellPrice = 0.0;
 
     public EveMinerAnalyzer() {
         themeManager = new ThemeManager();
@@ -119,6 +134,21 @@ public class EveMinerAnalyzer extends JFrame {
         themeMenu.add(darkThemeItem);
 
         appMenuBar.add(themeMenu);
+
+        // Settings menu
+        JMenu settingsMenu = new JMenu("Settings");
+
+        JMenuItem rollCostItem = new JMenuItem("Roll Cost");
+        rollCostItem.addActionListener(e -> showRollCostDialog());
+        settingsMenu.add(rollCostItem);
+
+        settingsMenu.addSeparator();
+
+        JMenuItem tierModifiersItem = new JMenuItem("Tier Modifiers");
+        tierModifiersItem.addActionListener(e -> showTierModifiersDialog());
+        settingsMenu.add(tierModifiersItem);
+
+        appMenuBar.add(settingsMenu);
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
@@ -184,11 +214,32 @@ public class EveMinerAnalyzer extends JFrame {
 
         headerPanel.add(typePanel, BorderLayout.CENTER);
 
+        // Sell price panel
+        sellPricePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        sellPricePanel.setBackground(themeManager.getBgColor());
+        sellPricePanel.setBorder(BorderFactory.createEmptyBorder(5, 0, 5, 0));
+
+        sellPriceLabel = new JLabel("Sell Price: -");
+        sellPriceLabel.setForeground(themeManager.getFgColor());
+        sellPricePanel.add(sellPriceLabel);
+
+        copySellPriceButton = new JButton("Copy");
+        copySellPriceButton.setEnabled(false);
+        copySellPriceButton.addActionListener(e -> copySellPriceToClipboard());
+        sellPricePanel.add(copySellPriceButton);
+
         // Status label
         statusLabel = new JLabel("Monitoring clipboard...");
         statusLabel.setForeground(themeManager.getFgColor());
         statusLabel.setBorder(BorderFactory.createEmptyBorder(5, 0, 0, 0));
-        headerPanel.add(statusLabel, BorderLayout.SOUTH);
+
+        // Create a container panel to hold both sell price and status
+        JPanel bottomPanel = new JPanel(new BorderLayout());
+        bottomPanel.setBackground(themeManager.getHeaderBgColor());
+        bottomPanel.add(sellPricePanel, BorderLayout.NORTH);
+        bottomPanel.add(statusLabel, BorderLayout.SOUTH);
+
+        headerPanel.add(bottomPanel, BorderLayout.SOUTH);
 
         mainPanel.add(headerPanel, BorderLayout.NORTH);
 
@@ -214,13 +265,13 @@ public class EveMinerAnalyzer extends JFrame {
             }
             // Set logical style for the entire document
             doc.setLogicalStyle(0, defaultStyle);
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             // Ignore style setup errors
         }
 
         // Initialize analysis display
-        analysisDisplay =
-                new AnalysisDisplay(doc, themeManager.getFgColor(), themeManager.getTierColors());
+        analysisDisplay = new AnalysisDisplay(doc, themeManager.getFgColor(),
+                themeManager.getTierColors(), this::updateSellPrice);
 
         JScrollPane scrollPane = new JScrollPane(resultsText);
         scrollPane.setBorder(BorderFactory.createCompoundBorder(
@@ -272,6 +323,16 @@ public class EveMinerAnalyzer extends JFrame {
         if (typePanel != null) {
             typePanel.setBackground(themeManager.getBgColor());
         }
+        if (sellPricePanel != null) {
+            sellPricePanel.setBackground(themeManager.getBgColor());
+        }
+        if (sellPriceLabel != null) {
+            sellPriceLabel.setForeground(themeManager.getFgColor());
+        }
+        if (copySellPriceButton != null) {
+            copySellPriceButton.setForeground(themeManager.getFgColor());
+            copySellPriceButton.setBackground(themeManager.getBgColor());
+        }
     }
 
     private void updateRadioButtonsTheme() {
@@ -312,7 +373,7 @@ public class EveMinerAnalyzer extends JFrame {
                 javax.swing.text.StyleConstants.setForeground(style, themeManager.getFgColor());
                 resultsText.getStyledDocument().setLogicalStyle(0, style);
             }
-        } catch (Exception ignored) {
+        } catch (Exception _) {
             // Ignore style errors
         }
     }
@@ -431,6 +492,8 @@ public class EveMinerAnalyzer extends JFrame {
                 analysisDisplay.appendText("Copy item stats from EVE Online to analyze.\n",
                         themeManager.getFgColor());
                 updateStatus("Miner type changed. Waiting for clipboard update...");
+                // Reset sell price
+                updateSellPrice(0.0);
             } catch (BadLocationException e) {
                 e.printStackTrace();
             }
@@ -443,7 +506,7 @@ public class EveMinerAnalyzer extends JFrame {
                 String timeStr = java.time.LocalTime.now().toString();
                 String timestamp = timeStr.length() >= 8 ? timeStr.substring(0, 8) : timeStr;
                 statusLabel.setText(message + " - " + timestamp);
-            } catch (Exception ignored) {
+            } catch (Exception _) {
                 // Fallback if timestamp formatting fails
                 statusLabel.setText(message);
             }
@@ -460,6 +523,172 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void restartClipboardMonitoring() {
         startClipboardMonitoring();
+    }
+
+    private void showRollCostDialog() {
+        double currentCost = ConfigManager.getRollCost();
+
+        String input = JOptionPane.showInputDialog(this,
+                "Enter the cost to roll the mod (current: "
+                        + (currentCost > 0 ? String.format("%.0f", currentCost) : "not set") + "):",
+                "Roll Cost Settings", JOptionPane.QUESTION_MESSAGE);
+
+        if (input != null && !input.trim().isEmpty()) {
+            try {
+                double newCost = Double.parseDouble(input.trim());
+                if (newCost < 0) {
+                    JOptionPane.showMessageDialog(this,
+                            "Cost cannot be negative. Please enter a positive number.",
+                            INVALID_INPUT, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                ConfigManager.saveRollCost(newCost);
+                JOptionPane.showMessageDialog(this,
+                        "Roll cost set to " + String.format("%.0f", newCost), "Settings Saved",
+                        JOptionPane.INFORMATION_MESSAGE);
+                // Update sell price if analysis is displayed
+                updateSellPriceIfNeeded();
+            } catch (NumberFormatException _) {
+                JOptionPane.showMessageDialog(this,
+                        "Invalid number format. Please enter a valid decimal number.",
+                        INVALID_INPUT, JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void showTierModifiersDialog() {
+        // Load current modifiers from config
+        Map<String, Double> currentModifiers = TierModifierManager.loadTierModifiers();
+        String[] tiers = {"S", "A", "B", "C", "D", "E", "F"};
+
+        // Create dialog
+        JDialog dialog = new JDialog(this, "Tier Modifiers Settings", true);
+        dialog.setSize(300, 350);
+        dialog.setLocationRelativeTo(this);
+        dialog.getContentPane().setBackground(themeManager.getBgColor());
+
+        // Create dialog panel
+        JPanel dialogPanel = new JPanel(new java.awt.BorderLayout());
+        dialogPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        dialogPanel.setBackground(themeManager.getBgColor());
+
+        // Create panel for tier inputs
+        JPanel tierPanel = new JPanel();
+        tierPanel.setLayout(new java.awt.GridLayout(tiers.length, 2, 5, 5));
+        tierPanel.setBackground(themeManager.getBgColor());
+
+        // Store text fields in a map for later retrieval
+        Map<String, JTextField> textFields = new java.util.HashMap<>();
+
+        // Create labels and text fields for each tier
+        for (String tier : tiers) {
+            JLabel label = new JLabel(TIER_PREFIX + tier + ":");
+            label.setForeground(themeManager.getFgColor());
+            tierPanel.add(label);
+
+            JTextField textField =
+                    new JTextField(String.valueOf(currentModifiers.getOrDefault(tier, 1.0)));
+            textField.setBackground(themeManager.getFrameBg());
+            textField.setForeground(themeManager.getFgColor());
+            textFields.put(tier, textField);
+            tierPanel.add(textField);
+        }
+
+        dialogPanel.add(tierPanel, BorderLayout.CENTER);
+
+        // Create button panel
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(themeManager.getBgColor());
+
+        JButton saveButton = new JButton("Save");
+        saveButton.addActionListener(e -> {
+            Map<String, Double> newModifiers = new java.util.HashMap<>();
+            boolean hasError = false;
+            StringBuilder errorMessage = new StringBuilder("Invalid values:\n");
+
+            // Validate and collect new values
+            for (String tier : tiers) {
+                JTextField textField = textFields.get(tier);
+                String text = textField.getText().trim();
+                if (text.isEmpty()) {
+                    hasError = true;
+                    errorMessage.append(TIER_PREFIX).append(tier).append(" cannot be empty\n");
+                    continue;
+                }
+                try {
+                    double value = Double.parseDouble(text);
+                    newModifiers.put(tier, value);
+                } catch (NumberFormatException _) {
+                    hasError = true;
+                    errorMessage.append(TIER_PREFIX).append(tier)
+                            .append(": invalid number format\n");
+                }
+            }
+
+            if (!hasError) {
+                // Save modifiers
+                TierModifierManager.saveTierModifiers(newModifiers);
+                dialog.dispose();
+                JOptionPane.showMessageDialog(this, "Tier modifiers saved successfully.",
+                        "Settings Saved", JOptionPane.INFORMATION_MESSAGE);
+                // Update sell price if analysis is displayed
+                updateSellPriceIfNeeded();
+            } else {
+                JOptionPane.showMessageDialog(dialog, errorMessage.toString(), INVALID_INPUT,
+                        JOptionPane.ERROR_MESSAGE);
+            }
+        });
+
+        JButton cancelButton = new JButton("Cancel");
+        cancelButton.addActionListener(e -> dialog.dispose());
+
+        buttonPanel.add(cancelButton);
+        buttonPanel.add(saveButton);
+        dialogPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        dialog.add(dialogPanel);
+        dialog.setVisible(true);
+    }
+
+    private void updateSellPriceIfNeeded() {
+        // This will be handled by the next analysis
+        // We just need to ensure the UI refreshes if there's a current analysis
+    }
+
+    public void updateSellPrice(double sellPrice) {
+        SwingUtilities.invokeLater(() -> {
+            currentSellPrice = sellPrice;
+            if (sellPriceLabel != null) {
+                if (sellPrice > 0) {
+                    // Format with comma separators for readability
+                    java.text.NumberFormat formatter = java.text.NumberFormat.getInstance();
+                    formatter.setGroupingUsed(true);
+                    formatter.setMaximumFractionDigits(0);
+                    sellPriceLabel.setText("Sell Price: " + formatter.format(sellPrice) + " ISK");
+                } else {
+                    sellPriceLabel.setText("Sell Price: -");
+                }
+            }
+            if (copySellPriceButton != null) {
+                copySellPriceButton.setEnabled(sellPrice > 0);
+            }
+        });
+    }
+
+    private void copySellPriceToClipboard() {
+        if (currentSellPrice > 0) {
+            try {
+                String priceText = String.valueOf((long) currentSellPrice);
+                java.awt.datatransfer.StringSelection selection =
+                        new java.awt.datatransfer.StringSelection(priceText);
+                java.awt.datatransfer.Clipboard clipboard =
+                        Toolkit.getDefaultToolkit().getSystemClipboard();
+                clipboard.setContents(selection, null);
+                updateStatus("Sell price copied to clipboard");
+            } catch (Exception _) {
+                // Ignore clipboard errors
+            }
+        }
     }
 
     private void showAboutDialog() {
@@ -482,7 +711,7 @@ public class EveMinerAnalyzer extends JFrame {
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
+            } catch (Exception _) {
                 // Use default LAF
             }
 
