@@ -17,6 +17,7 @@ public class ConfigManager {
     private static final String ROLL_COST_FILE = "roll_cost.txt";
     private static final String TIER_MODIFIERS_FILE = "tier_modifiers.txt";
     private static final String OPTIMAL_RANGE_MODIFIER_FILE = "optimal_range_modifier.txt";
+    private static final String PATH_VALIDATION_FAILED_MSG = "Path validation failed";
 
     /**
      * Private constructor to prevent instantiation of utility class
@@ -183,6 +184,66 @@ public class ConfigManager {
     }
 
     /**
+     * Normalizes a numeric string by handling commas correctly. Distinguishes between thousand
+     * separators (e.g., "1,234,567") and decimal separators (e.g., "1,5").
+     * 
+     * Rules: - If the string contains a period, commas are treated as thousand separators (removed)
+     * - Multiple commas are always treated as thousand separators (removed) - Single comma followed
+     * by exactly 3 digits is treated as thousand separator (removed) - Single comma followed by 1-2
+     * digits is treated as decimal separator (replaced with period)
+     * 
+     * @param input The input string containing a number with optional commas
+     * @return The normalized string with commas handled appropriately
+     */
+    public static String normalizeNumericString(String input) {
+        if (input == null) {
+            return null;
+        }
+
+        String trimmed = input.trim();
+        if (trimmed.isEmpty()) {
+            return trimmed;
+        }
+
+        // Count commas
+        long commaCount = trimmed.chars().filter(ch -> ch == ',').count();
+
+        if (commaCount == 0) {
+            // No commas, return as-is
+            return trimmed;
+        }
+
+        // If there's a period in the string, commas are definitely thousand separators
+        // (e.g., "1,234.5" - period is decimal separator, comma is thousand separator)
+        if (trimmed.contains(".")) {
+            return trimmed.replace(",", "");
+        }
+
+        if (commaCount > 1) {
+            // Multiple commas: treat all as thousand separators
+            return trimmed.replace(",", "");
+        }
+
+        // Single comma: determine if it's a thousand separator or decimal separator
+        int commaIndex = trimmed.indexOf(',');
+        String afterComma = trimmed.substring(commaIndex + 1);
+
+        // Check if comma is followed by exactly 3 digits (thousand separator pattern)
+        // Examples: "1,234" or "12,345" (standard thousand separator format)
+        if (afterComma.length() >= 3 && Character.isDigit(afterComma.charAt(0))
+                && Character.isDigit(afterComma.charAt(1))
+                && Character.isDigit(afterComma.charAt(2))
+                && (afterComma.length() == 3 || !Character.isDigit(afterComma.charAt(3)))) {
+            // Pattern like "1,234" - treat as thousand separator
+            return trimmed.replace(",", "");
+        }
+
+        // Single comma not followed by exactly 3 digits: treat as decimal separator
+        // Examples: "1,5" -> "1.5", "12,50" -> "12.50"
+        return trimmed.replace(",", ".");
+    }
+
+    /**
      * Gets the roll cost from config file
      * 
      * @return Roll cost as double, or 0.0 if file doesn't exist or is invalid
@@ -193,7 +254,7 @@ public class ConfigManager {
 
         if (costFile == null) {
             ErrorLogger.logError("Failed to resolve roll cost file path due to validation failure",
-                    new SecurityException("Path validation failed"));
+                    new SecurityException(PATH_VALIDATION_FAILED_MSG));
             return 0.0;
         }
 
@@ -206,7 +267,9 @@ public class ConfigManager {
         try (BufferedReader reader = new BufferedReader(new FileReader(costFile))) {
             String line = reader.readLine();
             if (line != null) {
-                line = line.trim();
+                // Normalize numeric string to handle both thousand separators and decimal
+                // separators
+                line = normalizeNumericString(line);
                 return Double.parseDouble(line);
             }
         } catch (IOException | NumberFormatException e) {
@@ -229,7 +292,7 @@ public class ConfigManager {
 
         if (costFile == null) {
             ErrorLogger.logError("Failed to resolve roll cost file path due to validation failure",
-                    new SecurityException("Path validation failed"));
+                    new SecurityException(PATH_VALIDATION_FAILED_MSG));
             return;
         }
 
@@ -254,7 +317,7 @@ public class ConfigManager {
         if (file == null) {
             ErrorLogger.logError(
                     "Failed to resolve tier modifiers file path due to validation failure",
-                    new SecurityException("Path validation failed"));
+                    new SecurityException(PATH_VALIDATION_FAILED_MSG));
         }
 
         return file;
@@ -272,7 +335,7 @@ public class ConfigManager {
         if (file == null) {
             ErrorLogger.logError(
                     "Failed to resolve optimal range modifier file path due to validation failure",
-                    new SecurityException("Path validation failed"));
+                    new SecurityException(PATH_VALIDATION_FAILED_MSG));
         }
 
         return file;
