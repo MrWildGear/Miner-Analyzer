@@ -47,7 +47,7 @@ import util.ErrorLogger;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.10";
+    private static final String VERSION = "1.4.15";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
@@ -646,7 +646,10 @@ public class EveMinerAnalyzer extends JFrame {
 
         if (input != null && !input.trim().isEmpty()) {
             try {
-                double newCost = Double.parseDouble(input.trim());
+                // Normalize numeric string to handle both thousand separators and decimal
+                // separators
+                String cleanedInput = ConfigManager.normalizeNumericString(input);
+                double newCost = Double.parseDouble(cleanedInput);
                 if (newCost < 0) {
                     JOptionPane.showMessageDialog(this,
                             "Cost cannot be negative. Please enter a positive number.",

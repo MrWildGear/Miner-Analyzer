@@ -396,16 +396,35 @@ public class AnalysisDisplay {
                 fgColor);
         appendText(repeat("-", 76) + "\n", fgColor);
 
+        // Extract base values fresh each time to avoid any potential state issues
         Double baseMiningAmt = baseStats.get(KEY_MINING_AMOUNT);
         Double baseActTime = baseStats.get(KEY_ACTIVATION_TIME);
         if (baseMiningAmt == null || baseActTime == null || baseActTime <= 0) {
             return 0.0;
         }
 
+        // Calculate base metrics fresh each time - ensure no stale values
         PerformanceMetrics baseMetrics =
                 calculateBasePerformanceMetrics(baseStats, baseMiningAmt, baseActTime);
-        double baseM3Pct = displayPerformanceMetricRow("Base M3/sec", analysis.getM3PerSec(),
-                analysis.getRealWorldM3PerSec(), baseMetrics.baseM3PerSec,
+        
+        // Get rolled values from current analysis
+        double rolledM3PerSec = analysis.getM3PerSec();
+        double rolledRealWorldM3PerSec = analysis.getRealWorldM3PerSec();
+        
+        // Validate values before calculation to prevent incorrect baseM3Pct
+        // Note: getM3PerSec() returns a primitive double, so null checks are not applicable
+        // Instead, validate that the values are positive and finite
+        if (rolledM3PerSec <= 0 || !Double.isFinite(rolledM3PerSec) || baseMetrics.baseM3PerSec <= 0) {
+            ErrorLogger.logError("Invalid values for baseM3Pct calculation: rolledM3PerSec=" + 
+                    rolledM3PerSec + ", baseM3PerSec=" + baseMetrics.baseM3PerSec, null);
+            return 0.0;
+        }
+        
+        // Calculate baseM3Pct using fresh values from current analysis
+        double baseM3Pct = displayPerformanceMetricRow("Base M3/sec", 
+                rolledM3PerSec,
+                rolledRealWorldM3PerSec, 
+                baseMetrics.baseM3PerSec,
                 baseMetrics.realWorldM3PerSec);
 
         if (MINER_TYPE_MODULATED.equals(minerType) && analysis.getBasePlusCritsM3PerSec() != null) {

@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import config.ConfigManager;
 import util.ErrorLogger;
 
 /**
@@ -134,8 +135,8 @@ public class ItemStatsParser {
             }
 
             // Extract numeric value from the string
-            // Handle comma-separated numbers (e.g., "1,000 m3" -> 1000)
-            valueStr = valueStr.replace(",", ""); // Remove commas
+            // Normalize numeric string to handle both thousand separators and decimal separators
+            valueStr = ConfigManager.normalizeNumericString(valueStr);
             
             // Extract number pattern (digits and decimal point)
             // This handles formats like "1000 m3", "12.5 km", etc.
