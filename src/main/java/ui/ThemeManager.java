@@ -5,11 +5,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import javax.swing.UIManager;
+import util.ErrorLogger;
 
 /**
  * Manages theme detection and application
  */
 public class ThemeManager {
+
+    // Color brightness calculation constants (standard RGB luminance weights)
+    private static final double RED_LUMINANCE_WEIGHT = 0.299;
+    private static final double GREEN_LUMINANCE_WEIGHT = 0.587;
+    private static final double BLUE_LUMINANCE_WEIGHT = 0.114;
+    private static final double MAX_COLOR_VALUE = 255.0; // Maximum RGB color value
+    private static final double BRIGHTNESS_THRESHOLD = 0.5; // Threshold for dark/light mode detection
+    
+    // Time conversion constants
+    private static final int MILLISECONDS_PER_SECOND = 1000; // Convert seconds to milliseconds
 
     private boolean isDarkMode;
     private Boolean manualThemeOverride = null; // null = auto, true = dark, false = light
@@ -23,21 +34,30 @@ public class ThemeManager {
     private Color headerBgColor;
     private Map<String, Color> tierColors;
 
+    /**
+     * Constructs a ThemeManager and initializes the theme based on system settings.
+     */
     public ThemeManager() {
         try {
             detectSystemTheme();
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error detecting system theme during initialization", e);
             // If theme detection fails, use default light theme
             isDarkMode = false;
             applyTheme();
         }
     }
 
+    /**
+     * Detects and applies the system theme, respecting any manual override settings.
+     * If manual override is set, uses that instead of system detection.
+     */
     public void detectSystemTheme() {
         // Try to detect system theme
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error setting system look and feel", e);
             // Use default if detection fails
         }
 
@@ -63,24 +83,28 @@ public class ThemeManager {
         try {
             // Try Java 8+ method first
             return process.waitFor(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS);
-        } catch (InterruptedException ignored) {
+        } catch (InterruptedException e) {
+            ErrorLogger.logError("Interrupted while waiting for process", e);
             Thread.currentThread().interrupt();
             return false;
-        } catch (NoSuchMethodError ignored) {
+        } catch (NoSuchMethodError e) {
+            ErrorLogger.logError("Process.waitFor with timeout not available (Java 7 compatibility)", e);
             // Fallback for Java 7: use simple waitFor with thread interrupt
             Thread waitThread = new Thread(() -> {
                 try {
                     process.waitFor();
-                } catch (InterruptedException ignored1) {
+                } catch (InterruptedException ex) {
+                    ErrorLogger.logError("Interrupted in process wait thread", ex);
                     Thread.currentThread().interrupt();
                 }
             });
             waitThread.start();
             try {
-                waitThread.join((long) timeoutSeconds * 1000); // Wait max timeoutSeconds
-                                                               // milliseconds
+                waitThread.join((long) timeoutSeconds * MILLISECONDS_PER_SECOND); // Wait max timeoutSeconds
+                                                                                   // milliseconds
                 return !waitThread.isAlive();
-            } catch (InterruptedException ignored2) {
+            } catch (InterruptedException ex) {
+                ErrorLogger.logError("Interrupted while joining process wait thread", ex);
                 waitThread.interrupt();
                 Thread.currentThread().interrupt();
                 return false;
@@ -127,7 +151,8 @@ public class ThemeManager {
             }
 
             return parseRegistryOutput(process);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error reading Windows registry for theme detection", e);
             // Registry read failed, try other methods
             return Optional.empty();
         }
@@ -136,8 +161,8 @@ public class ThemeManager {
     private void destroyProcess(Process process) {
         try {
             process.destroy();
-        } catch (Exception ignored) {
-            // Ignore destroy errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error destroying process", e);
         }
     }
 
@@ -153,7 +178,8 @@ public class ThemeManager {
                 }
             }
             return Optional.of(false);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error parsing registry output for theme detection", e);
             return Optional.empty();
         }
     }
@@ -163,13 +189,14 @@ public class ThemeManager {
             Color bg = UIManager.getColor("Panel.background");
             if (bg != null) {
                 // Dark mode typically has low brightness
-                double brightness =
-                        (bg.getRed() * 0.299 + bg.getGreen() * 0.587 + bg.getBlue() * 0.114)
-                                / 255.0;
-                return Optional.of(brightness < 0.5);
+                double brightness = (bg.getRed() * RED_LUMINANCE_WEIGHT
+                        + bg.getGreen() * GREEN_LUMINANCE_WEIGHT + bg.getBlue() * BLUE_LUMINANCE_WEIGHT)
+                        / MAX_COLOR_VALUE;
+                return Optional.of(brightness < BRIGHTNESS_THRESHOLD);
             }
             return Optional.of(false);
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error detecting theme from UIManager colors", e);
             // Color check failed
             return Optional.empty();
         }
@@ -179,7 +206,8 @@ public class ThemeManager {
         try {
             String theme = System.getProperty("swing.systemTheme");
             return Optional.of(theme != null && theme.toLowerCase().contains("dark"));
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error detecting theme from system property", e);
             // Property check failed
             return Optional.empty();
         }
@@ -263,11 +291,16 @@ public class ThemeManager {
                 UIManager.put("MenuItem.selectionBackground", new Color(200, 200, 200));
                 UIManager.put("MenuItem.selectionForeground", Color.BLACK);
             }
-        } catch (Exception ignored) {
-            // Ignore UIManager errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error applying UIManager theme properties", e);
         }
     }
 
+    /**
+     * Toggles between light and dark theme.
+     * If currently on auto mode, switches to the opposite of the current theme.
+     * If currently on manual mode, toggles between light and dark.
+     */
     public void toggleTheme() {
         if (manualThemeOverride == null) {
             // Currently auto, switch to opposite of current
@@ -279,54 +312,110 @@ public class ThemeManager {
         detectSystemTheme();
     }
 
+    /**
+     * Sets the theme to automatically follow the system theme.
+     */
     public void setThemeAuto() {
         manualThemeOverride = null;
         detectSystemTheme();
     }
 
+    /**
+     * Sets the theme to light mode (manual override).
+     */
     public void setThemeLight() {
         manualThemeOverride = false;
         detectSystemTheme();
     }
 
+    /**
+     * Sets the theme to dark mode (manual override).
+     */
     public void setThemeDark() {
         manualThemeOverride = true;
         detectSystemTheme();
     }
 
     // Getters
+    
+    /**
+     * Checks if dark mode is currently active.
+     * 
+     * @return true if dark mode is active, false if light mode
+     */
     public boolean isDarkMode() {
         return isDarkMode;
     }
 
+    /**
+     * Gets the background color for panels.
+     * 
+     * @return The background color
+     */
     public Color getBgColor() {
         return bgColor;
     }
 
+    /**
+     * Gets the foreground (text) color.
+     * 
+     * @return The foreground color
+     */
     public Color getFgColor() {
         return fgColor;
     }
 
+    /**
+     * Gets the background color for frames and text panes.
+     * 
+     * @return The frame background color
+     */
     public Color getFrameBg() {
         return frameBg;
     }
 
+    /**
+     * Gets a map of tier colors (S, A, B, C, D, E, F) for displaying tier information.
+     * Returns a copy of the internal map to prevent external modification.
+     * 
+     * @return A map of tier letters to their corresponding colors
+     */
     public Map<String, Color> getTierColors() {
         return new HashMap<>(tierColors);
     }
 
+    /**
+     * Gets the background color for menu bars and popup menus.
+     * 
+     * @return The menu background color
+     */
     public Color getMenuBgColor() {
         return menuBgColor;
     }
 
+    /**
+     * Gets the foreground (text) color for menu bars and menu items.
+     * 
+     * @return The menu foreground color
+     */
     public Color getMenuFgColor() {
         return menuFgColor;
     }
 
+    /**
+     * Gets the border color for UI components.
+     * 
+     * @return The border color
+     */
     public Color getBorderColor() {
         return borderColor;
     }
 
+    /**
+     * Gets the background color for header panels.
+     * 
+     * @return The header background color
+     */
     public Color getHeaderBgColor() {
         return headerBgColor;
     }

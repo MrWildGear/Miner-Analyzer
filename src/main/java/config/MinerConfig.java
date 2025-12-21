@@ -1,5 +1,6 @@
 package config;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,6 +33,11 @@ public class MinerConfig {
     private static final Map<String, Map<String, Double>> MODULATED_TIER_RANGES = new HashMap<>();
     private static final Map<String, Map<String, Double>> ICE_TIER_RANGES = new HashMap<>();
 
+    // Cached unmodifiable versions of tier ranges
+    private static final Map<String, Map<String, Double>> UNMODIFIABLE_ORE_TIER_RANGES;
+    private static final Map<String, Map<String, Double>> UNMODIFIABLE_MODULATED_TIER_RANGES;
+    private static final Map<String, Map<String, Double>> UNMODIFIABLE_ICE_TIER_RANGES;
+
     // ============================================================================
     // BONUSES
     // ============================================================================
@@ -42,6 +48,11 @@ public class MinerConfig {
     public static final double INDUSTRIAL_CORE_YIELD = 1.50;
     public static final double INDUSTRIAL_CORE_CYCLE_TIME = 0.75;
     public static final double CALIBRATION_MULTIPLIER = 1.35;
+
+    // Critical success and probability constants
+    private static final double CRITICAL_SUCCESS_CHANCE_BASE = 0.01; // 1% base critical success chance
+    private static final double MODULATED_RESIDUE_PROBABILITY = 0.34; // 34% residue probability for modulated
+    private static final double ICE_MINING_AMOUNT_BASE = 1000.0; // Base mining amount for ice harvester
 
     // ============================================================================
     // STAT STRING CONSTANTS
@@ -89,6 +100,23 @@ public class MinerConfig {
         initializeOreTierRanges();
         initializeModulatedTierRanges();
         initializeIceTierRanges();
+        
+        // Initialize cached unmodifiable tier ranges
+        UNMODIFIABLE_ORE_TIER_RANGES = createUnmodifiableTierRanges(ORE_TIER_RANGES);
+        UNMODIFIABLE_MODULATED_TIER_RANGES = createUnmodifiableTierRanges(MODULATED_TIER_RANGES);
+        UNMODIFIABLE_ICE_TIER_RANGES = createUnmodifiableTierRanges(ICE_TIER_RANGES);
+    }
+    
+    /**
+     * Creates an unmodifiable map with unmodifiable nested maps from a tier ranges map.
+     */
+    private static Map<String, Map<String, Double>> createUnmodifiableTierRanges(
+            Map<String, Map<String, Double>> tierRanges) {
+        Map<String, Map<String, Double>> unmodifiable = new HashMap<>();
+        for (Map.Entry<String, Map<String, Double>> entry : tierRanges.entrySet()) {
+            unmodifiable.put(entry.getKey(), Collections.unmodifiableMap(entry.getValue()));
+        }
+        return Collections.unmodifiableMap(unmodifiable);
     }
 
     private static void initializeOreBaseStats() {
@@ -98,7 +126,7 @@ public class MinerConfig {
         ORE_BASE_STATS.put(OPTIMAL_RANGE, 18.75);
         ORE_BASE_STATS.put(ACTIVATION_TIME, 45.0);
         ORE_BASE_STATS.put(MINING_AMOUNT, 200.0);
-        ORE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01);
+        ORE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, CRITICAL_SUCCESS_CHANCE_BASE);
         ORE_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 0.0);
         ORE_BASE_STATS.put(RESIDUE_PROBABILITY, 0.0);
         ORE_BASE_STATS.put(TECH_LEVEL, 1.0);
@@ -114,9 +142,9 @@ public class MinerConfig {
         MODULATED_BASE_STATS.put(OPTIMAL_RANGE, 15.00);
         MODULATED_BASE_STATS.put(ACTIVATION_TIME, 45.0);
         MODULATED_BASE_STATS.put(MINING_AMOUNT, 120.0);
-        MODULATED_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01);
+        MODULATED_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, CRITICAL_SUCCESS_CHANCE_BASE);
         MODULATED_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 1.0);
-        MODULATED_BASE_STATS.put(RESIDUE_PROBABILITY, 0.34);
+        MODULATED_BASE_STATS.put(RESIDUE_PROBABILITY, MODULATED_RESIDUE_PROBABILITY);
         MODULATED_BASE_STATS.put(TECH_LEVEL, 2.0);
         MODULATED_BASE_STATS.put(CRITICAL_SUCCESS_BONUS_YIELD, 2.0);
         MODULATED_BASE_STATS.put(META_LEVEL, 5.0);
@@ -130,8 +158,8 @@ public class MinerConfig {
         ICE_BASE_STATS.put(VOLUME, 5.0);
         ICE_BASE_STATS.put(OPTIMAL_RANGE, 12.50);
         ICE_BASE_STATS.put(ACTIVATION_TIME, 200.0); // 3m 20s = 200s
-        ICE_BASE_STATS.put(MINING_AMOUNT, 1000.0);
-        ICE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01); // 1%
+        ICE_BASE_STATS.put(MINING_AMOUNT, ICE_MINING_AMOUNT_BASE);
+        ICE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, CRITICAL_SUCCESS_CHANCE_BASE); // 1%
         ICE_BASE_STATS.put(CRITICAL_SUCCESS_BONUS_YIELD, 2.0); // 200%
         ICE_BASE_STATS.put(RESIDUE_PROBABILITY, 0.0);
         ICE_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 0.0);
@@ -255,18 +283,39 @@ public class MinerConfig {
     // PUBLIC GETTERS
     // ============================================================================
 
+    /**
+     * Gets the base stats for ORE Strip Miner.
+     * 
+     * @return An unmodifiable map of stat names to base values
+     */
     public static Map<String, Double> getOreBaseStats() {
-        return new HashMap<>(ORE_BASE_STATS);
+        return Collections.unmodifiableMap(ORE_BASE_STATS);
     }
 
+    /**
+     * Gets the base stats for Modulated Strip Miner II.
+     * 
+     * @return An unmodifiable map of stat names to base values
+     */
     public static Map<String, Double> getModulatedBaseStats() {
-        return new HashMap<>(MODULATED_BASE_STATS);
+        return Collections.unmodifiableMap(MODULATED_BASE_STATS);
     }
 
+    /**
+     * Gets the base stats for ORE Ice Harvester.
+     * 
+     * @return An unmodifiable map of stat names to base values
+     */
     public static Map<String, Double> getIceBaseStats() {
-        return new HashMap<>(ICE_BASE_STATS);
+        return Collections.unmodifiableMap(ICE_BASE_STATS);
     }
 
+    /**
+     * Gets the base stats for the specified miner type.
+     * 
+     * @param minerType The miner type ("ORE", "Ice", or anything else for "Modulated")
+     * @return An unmodifiable map of stat names to base values
+     */
     public static Map<String, Double> getBaseStats(String minerType) {
         if (MINER_TYPE_ORE.equals(minerType)) {
             return getOreBaseStats();
@@ -277,33 +326,39 @@ public class MinerConfig {
         }
     }
 
+    /**
+     * Gets the tier ranges for ORE Strip Miner.
+     * 
+     * @return An unmodifiable map of tier letters (S, A, B, C, D, E, F) to their min/max ranges
+     */
     public static Map<String, Map<String, Double>> getOreTierRanges() {
-        // Return deep copy to prevent modification
-        Map<String, Map<String, Double>> copy = new HashMap<>();
-        for (Map.Entry<String, Map<String, Double>> entry : ORE_TIER_RANGES.entrySet()) {
-            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
-        }
-        return copy;
+        return UNMODIFIABLE_ORE_TIER_RANGES;
     }
 
+    /**
+     * Gets the tier ranges for Modulated Strip Miner II.
+     * 
+     * @return An unmodifiable map of tier letters (S, A, B, C, D, E, F) to their min/max ranges
+     */
     public static Map<String, Map<String, Double>> getModulatedTierRanges() {
-        // Return deep copy to prevent modification
-        Map<String, Map<String, Double>> copy = new HashMap<>();
-        for (Map.Entry<String, Map<String, Double>> entry : MODULATED_TIER_RANGES.entrySet()) {
-            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
-        }
-        return copy;
+        return UNMODIFIABLE_MODULATED_TIER_RANGES;
     }
 
+    /**
+     * Gets the tier ranges for ORE Ice Harvester.
+     * 
+     * @return An unmodifiable map of tier letters (S, A, B, C, D, E, F) to their min/max ranges
+     */
     public static Map<String, Map<String, Double>> getIceTierRanges() {
-        // Return deep copy to prevent modification
-        Map<String, Map<String, Double>> copy = new HashMap<>();
-        for (Map.Entry<String, Map<String, Double>> entry : ICE_TIER_RANGES.entrySet()) {
-            copy.put(entry.getKey(), new HashMap<>(entry.getValue()));
-        }
-        return copy;
+        return UNMODIFIABLE_ICE_TIER_RANGES;
     }
 
+    /**
+     * Gets the tier ranges for the specified miner type.
+     * 
+     * @param minerType The miner type ("ORE", "Ice", or anything else for "Modulated")
+     * @return An unmodifiable map of tier letters (S, A, B, C, D, E, F) to their min/max ranges
+     */
     public static Map<String, Map<String, Double>> getTierRanges(String minerType) {
         if (MINER_TYPE_ORE.equals(minerType)) {
             return getOreTierRanges();

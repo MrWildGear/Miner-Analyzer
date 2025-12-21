@@ -35,8 +35,10 @@ import config.ConfigManager;
 import config.OptimalRangeModifierManager;
 import config.TierModifierManager;
 import service.ClipboardMonitor;
+import service.ErrorLogMonitor;
 import ui.AnalysisDisplay;
 import ui.ThemeManager;
+import util.ErrorLogger;
 
 /**
  * EVE Online Strip Miner Roll Analyzer Reads item stats from clipboard and calculates m3/sec with
@@ -45,12 +47,16 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.7";
+    private static final String VERSION = "1.4.9";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
     private static final String INVALID_INPUT = "Invalid Input";
     private static final String FONT_ARIAL = "Arial";
+    private static final String ERROR_STATISTICS = "Error Statistics";
+
+    // Validation constants
+    private static final double MAX_ROLL_COST = 1e12; // Maximum allowed roll cost (1 trillion ISK)
 
     // UI Components
     private JRadioButton oreRadio;
@@ -62,6 +68,7 @@ public class EveMinerAnalyzer extends JFrame {
 
     private String minerType = "ORE";
     private transient ClipboardMonitor clipboardMonitor;
+    private transient ErrorLogMonitor errorLogMonitor;
 
     // Theme management
     private transient ThemeManager themeManager;
@@ -79,17 +86,28 @@ public class EveMinerAnalyzer extends JFrame {
     private JButton copySellPriceButton;
     private double currentSellPrice = 0.0;
 
+    /**
+     * Constructs the main application window and initializes the UI and clipboard monitoring.
+     */
     public EveMinerAnalyzer() {
         themeManager = new ThemeManager();
         initializeUI();
         startClipboardMonitoring();
+        startErrorLogMonitoring();
 
         // Clean up on close
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                if (clipboardMonitor != null) {
-                    clipboardMonitor.stop();
+                try {
+                    if (clipboardMonitor != null) {
+                        clipboardMonitor.stop();
+                    }
+                    if (errorLogMonitor != null) {
+                        errorLogMonitor.stop();
+                    }
+                } catch (Exception ex) {
+                    ErrorLogger.logError("Error during application shutdown cleanup", ex);
                 }
                 System.exit(0);
             }
@@ -157,6 +175,10 @@ public class EveMinerAnalyzer extends JFrame {
 
         // Help menu
         JMenu helpMenu = new JMenu("Help");
+        JMenuItem errorStatsItem = new JMenuItem(ERROR_STATISTICS);
+        errorStatsItem.addActionListener(e -> showErrorStatisticsDialog());
+        helpMenu.add(errorStatsItem);
+        helpMenu.addSeparator();
         JMenuItem aboutItem = new JMenuItem("About");
         aboutItem.addActionListener(e -> showAboutDialog());
         helpMenu.add(aboutItem);
@@ -281,8 +303,8 @@ public class EveMinerAnalyzer extends JFrame {
             }
             // Set logical style for the entire document
             doc.setLogicalStyle(0, defaultStyle);
-        } catch (Exception ignored) {
-            // Ignore style setup errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error setting up document style", e);
         }
 
         // Initialize analysis display
@@ -393,8 +415,8 @@ public class EveMinerAnalyzer extends JFrame {
                 javax.swing.text.StyleConstants.setForeground(style, themeManager.getFgColor());
                 resultsText.getStyledDocument().setLogicalStyle(0, style);
             }
-        } catch (Exception ignored) {
-            // Ignore style errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error updating text pane style", e);
         }
     }
 
@@ -515,7 +537,7 @@ public class EveMinerAnalyzer extends JFrame {
                 // Reset sell price
                 updateSellPrice(0.0);
             } catch (BadLocationException e) {
-                e.printStackTrace();
+                ErrorLogger.logError("Error clearing results display", e);
             }
         });
     }
@@ -526,8 +548,9 @@ public class EveMinerAnalyzer extends JFrame {
                 String timeStr = java.time.LocalTime.now().toString();
                 String timestamp = timeStr.length() >= 8 ? timeStr.substring(0, 8) : timeStr;
                 statusLabel.setText(message + " - " + timestamp);
-            } catch (Exception ignored) {
+            } catch (Exception e) {
                 // Fallback if timestamp formatting fails
+                ErrorLogger.logError("Error updating status timestamp", e);
                 statusLabel.setText(message);
             }
         });
@@ -543,6 +566,19 @@ public class EveMinerAnalyzer extends JFrame {
 
     private void restartClipboardMonitoring() {
         startClipboardMonitoring();
+    }
+
+    private void startErrorLogMonitoring() {
+        if (errorLogMonitor != null) {
+            errorLogMonitor.stop();
+        }
+        errorLogMonitor = new ErrorLogMonitor((timestamp, message, errorNumber) ->
+        // Optional: You can add notification logic here
+        // For now, errors are tracked silently in the background
+        SwingUtilities.invokeLater(() -> {
+            // Could update status or show a notification here
+        }));
+        errorLogMonitor.start();
     }
 
     private void showRollCostDialog() {
@@ -562,13 +598,27 @@ public class EveMinerAnalyzer extends JFrame {
                             INVALID_INPUT, JOptionPane.ERROR_MESSAGE);
                     return;
                 }
+                if (Double.isInfinite(newCost) || Double.isNaN(newCost)) {
+                    JOptionPane.showMessageDialog(this,
+                            "Invalid cost value. Please enter a valid number.", INVALID_INPUT,
+                            JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
+                // Reasonable upper bound: 1 trillion (1e12) to prevent extremely large values
+                if (newCost > MAX_ROLL_COST) {
+                    JOptionPane.showMessageDialog(this,
+                            "Cost value too large. Please enter a value less than 1 trillion.",
+                            INVALID_INPUT, JOptionPane.ERROR_MESSAGE);
+                    return;
+                }
                 ConfigManager.saveRollCost(newCost);
                 JOptionPane.showMessageDialog(this,
                         "Roll cost set to " + String.format("%.0f", newCost), "Settings Saved",
                         JOptionPane.INFORMATION_MESSAGE);
                 // Update sell price if analysis is displayed
                 updateSellPriceIfNeeded();
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                ErrorLogger.logError("Invalid roll cost input format", e);
                 JOptionPane.showMessageDialog(this,
                         "Invalid number format. Please enter a valid decimal number.",
                         INVALID_INPUT, JOptionPane.ERROR_MESSAGE);
@@ -717,7 +767,8 @@ public class EveMinerAnalyzer extends JFrame {
             try {
                 double value = Double.parseDouble(text);
                 newTierModifiers.put(tier, value);
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                ErrorLogger.logError("Invalid tier modifier format for tier: " + tier, e);
                 hasError = true;
                 errorMessage.append(TIER_PREFIX).append(tier).append(": invalid number format\n");
             }
@@ -736,7 +787,8 @@ public class EveMinerAnalyzer extends JFrame {
                     hasError = true;
                     errorMessage.append("Optimal Range Modifier cannot be negative\n");
                 }
-            } catch (NumberFormatException ignored) {
+            } catch (NumberFormatException e) {
+                ErrorLogger.logError("Invalid optimal range modifier format", e);
                 hasError = true;
                 errorMessage.append("Optimal Range Modifier: invalid number format\n");
             }
@@ -782,6 +834,11 @@ public class EveMinerAnalyzer extends JFrame {
         // We just need to ensure the UI refreshes if there's a current analysis
     }
 
+    /**
+     * Updates the sell price display in the UI.
+     * 
+     * @param sellPrice The calculated sell price to display (in ISK)
+     */
     public void updateSellPrice(double sellPrice) {
         SwingUtilities.invokeLater(() -> {
             currentSellPrice = sellPrice;
@@ -812,10 +869,45 @@ public class EveMinerAnalyzer extends JFrame {
                         Toolkit.getDefaultToolkit().getSystemClipboard();
                 clipboard.setContents(selection, null);
                 updateStatus("Sell price copied to clipboard");
-            } catch (Exception ignored) {
-                // Ignore clipboard errors
+            } catch (Exception e) {
+                ErrorLogger.logError("Error copying sell price to clipboard", e);
             }
         }
+    }
+
+    private void showErrorStatisticsDialog() {
+        if (errorLogMonitor == null) {
+            JOptionPane.showMessageDialog(this, "Error monitoring is not available.",
+                    ERROR_STATISTICS, JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
+
+        int totalErrors = errorLogMonitor.getTotalErrorCount();
+        int sessionErrors = errorLogMonitor.getSessionErrorCount();
+        long lastErrorTimeMs = errorLogMonitor.getLastErrorTime();
+
+        StringBuilder message = new StringBuilder();
+        message.append("Error Log Statistics\n\n");
+        message.append("Total Errors (all time): ").append(totalErrors).append("\n");
+        message.append("Session Errors (this run): ").append(sessionErrors).append("\n\n");
+
+        if (lastErrorTimeMs > 0) {
+            java.time.LocalDateTime lastErrorTime = java.time.LocalDateTime.ofInstant(
+                    java.time.Instant.ofEpochMilli(lastErrorTimeMs),
+                    java.time.ZoneId.systemDefault());
+            java.time.format.DateTimeFormatter formatter =
+                    java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            message.append("Last Error: ").append(lastErrorTime.format(formatter)).append("\n");
+        } else {
+            message.append("Last Error: None detected\n");
+        }
+
+        message.append("\nError log file: error.log");
+        message.append("\nMonitoring: ")
+                .append(errorLogMonitor.isRunning() ? "Active" : "Inactive");
+
+        JOptionPane.showMessageDialog(this, message.toString(), ERROR_STATISTICS,
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void showAboutDialog() {
@@ -834,16 +926,49 @@ public class EveMinerAnalyzer extends JFrame {
     // MAIN
     // ============================================================================
 
+    /**
+     * Main entry point for the application. Sets up exception handlers and initializes the Swing
+     * GUI.
+     * 
+     * @param args Command line arguments (not used)
+     */
     public static void main(String[] args) {
+        // Set up global uncaught exception handler for main thread
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> ErrorLogger
+                .logError("Uncaught exception in thread: " + thread.getName(), throwable));
+
+        // Set up uncaught exception handler for EDT (Event Dispatch Thread)
+        System.setProperty("sun.awt.exception.handler",
+                EveMinerAnalyzer.class.getName() + "$EDTExceptionHandler");
+
         SwingUtilities.invokeLater(() -> {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
+            } catch (Exception e) {
+                ErrorLogger.logError("Failed to set system look and feel", e);
                 // Use default LAF
             }
 
-            new EveMinerAnalyzer().setVisible(true);
+            try {
+                new EveMinerAnalyzer().setVisible(true);
+            } catch (Exception e) {
+                ErrorLogger.logError("Fatal error during application startup", e);
+                JOptionPane.showMessageDialog(null,
+                        "A fatal error occurred during startup. Please check error.log for details.",
+                        "Fatal Error", JOptionPane.ERROR_MESSAGE);
+                System.exit(1);
+            }
         });
+    }
+
+    /**
+     * Handler for uncaught exceptions on the Event Dispatch Thread. This is called via System
+     * property sun.awt.exception.handler
+     */
+    public static class EDTExceptionHandler {
+        public void handle(Throwable throwable) {
+            ErrorLogger.logError("Uncaught exception on Event Dispatch Thread", throwable);
+        }
     }
 }
 
