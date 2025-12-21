@@ -47,7 +47,7 @@ import util.ErrorLogger;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.9";
+    private static final String VERSION = "1.4.10";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
@@ -58,6 +58,48 @@ public class EveMinerAnalyzer extends JFrame {
     // Validation constants
     private static final double MAX_ROLL_COST = 1e12; // Maximum allowed roll cost (1 trillion ISK)
 
+    // UI Menu constants
+    private static final String MENU_THEME = "Theme";
+    private static final String MENU_SETTINGS = "Settings";
+    private static final String MENU_HELP = "Help";
+    private static final String MENU_ITEM_TOGGLE_THEME = "Toggle Theme";
+    private static final String MENU_ITEM_AUTO_THEME = "Auto (Follow System)";
+    private static final String MENU_ITEM_LIGHT = "Light";
+    private static final String MENU_ITEM_DARK = "Dark";
+    private static final String MENU_ITEM_ROLL_COST = "Roll Cost";
+    private static final String MENU_ITEM_TIER_MODIFIERS = "Tier Modifiers";
+    private static final String MENU_ITEM_ABOUT = "About";
+
+    // Miner type constants
+    private static final String MINER_TYPE_ORE = "ORE";
+    private static final String MINER_TYPE_MODULATED = "Modulated";
+    private static final String MINER_TYPE_ICE = "Ice";
+
+    // UI Button constants
+    private static final String BUTTON_COPY = "Copy";
+    private static final String BUTTON_SAVE = "Save";
+    private static final String BUTTON_CANCEL = "Cancel";
+
+    // Font constants
+    private static final String FONT_CONSOLAS = "Consolas";
+    private static final int FONT_SIZE_RESULTS = 10;
+    private static final int FONT_SIZE_TITLE = 16;
+
+    // Window size constants
+    private static final int WINDOW_WIDTH = 900;
+    private static final int WINDOW_HEIGHT = 700;
+
+    // Dialog constants
+    private static final int DIALOG_WIDTH = 400;
+    private static final int DIALOG_HEIGHT = 450;
+
+    // Thread name constants
+    private static final String THREAD_SHUTDOWN_HOOK = "ShutdownHook";
+
+    // Status constants
+    private static final String STATUS_ACTIVE = "Active";
+    private static final String STATUS_INACTIVE = "Inactive";
+
     // UI Components
     private JRadioButton oreRadio;
     private JRadioButton modulatedRadio;
@@ -66,7 +108,7 @@ public class EveMinerAnalyzer extends JFrame {
     private JTextPane resultsText;
     private transient StyledDocument doc;
 
-    private String minerType = "ORE";
+    private String minerType = MINER_TYPE_ORE;
     private transient ClipboardMonitor clipboardMonitor;
     private transient ErrorLogMonitor errorLogMonitor;
 
@@ -95,38 +137,50 @@ public class EveMinerAnalyzer extends JFrame {
         startClipboardMonitoring();
         startErrorLogMonitoring();
 
+        // Register shutdown hook for graceful cleanup
+        Runtime.getRuntime()
+                .addShutdownHook(new Thread(this::performCleanup, THREAD_SHUTDOWN_HOOK));
+
         // Clean up on close
         addWindowListener(new WindowAdapter() {
             @Override
             public void windowClosing(WindowEvent e) {
-                try {
-                    if (clipboardMonitor != null) {
-                        clipboardMonitor.stop();
-                    }
-                    if (errorLogMonitor != null) {
-                        errorLogMonitor.stop();
-                    }
-                } catch (Exception ex) {
-                    ErrorLogger.logError("Error during application shutdown cleanup", ex);
-                }
+                performCleanup();
                 System.exit(0);
             }
         });
     }
 
+    /**
+     * Performs cleanup of resources (monitors, threads, etc.) during application shutdown. This
+     * method is called both from the window closing event and from the shutdown hook.
+     */
+    private void performCleanup() {
+        try {
+            if (clipboardMonitor != null) {
+                clipboardMonitor.stop();
+            }
+            if (errorLogMonitor != null) {
+                errorLogMonitor.stop();
+            }
+        } catch (Exception ex) {
+            ErrorLogger.logError("Error during application shutdown cleanup", ex);
+        }
+    }
+
     private void initializeUI() {
         setTitle(APP_NAME + " v" + VERSION);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setSize(900, 700);
+        setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setLocationRelativeTo(null);
 
         // Add menu bar with Theme and Help menus
         appMenuBar = new JMenuBar();
 
         // Theme menu
-        JMenu themeMenu = new JMenu("Theme");
+        JMenu themeMenu = new JMenu(MENU_THEME);
 
-        JMenuItem toggleThemeItem = new JMenuItem("Toggle Theme");
+        JMenuItem toggleThemeItem = new JMenuItem(MENU_ITEM_TOGGLE_THEME);
         toggleThemeItem.addActionListener(e -> {
             themeManager.toggleTheme();
             updateUITheme();
@@ -135,21 +189,21 @@ public class EveMinerAnalyzer extends JFrame {
 
         themeMenu.addSeparator();
 
-        JMenuItem autoThemeItem = new JMenuItem("Auto (Follow System)");
+        JMenuItem autoThemeItem = new JMenuItem(MENU_ITEM_AUTO_THEME);
         autoThemeItem.addActionListener(e -> {
             themeManager.setThemeAuto();
             updateUITheme();
         });
         themeMenu.add(autoThemeItem);
 
-        JMenuItem lightThemeItem = new JMenuItem("Light");
+        JMenuItem lightThemeItem = new JMenuItem(MENU_ITEM_LIGHT);
         lightThemeItem.addActionListener(e -> {
             themeManager.setThemeLight();
             updateUITheme();
         });
         themeMenu.add(lightThemeItem);
 
-        JMenuItem darkThemeItem = new JMenuItem("Dark");
+        JMenuItem darkThemeItem = new JMenuItem(MENU_ITEM_DARK);
         darkThemeItem.addActionListener(e -> {
             themeManager.setThemeDark();
             updateUITheme();
@@ -159,27 +213,27 @@ public class EveMinerAnalyzer extends JFrame {
         appMenuBar.add(themeMenu);
 
         // Settings menu
-        JMenu settingsMenu = new JMenu("Settings");
+        JMenu settingsMenu = new JMenu(MENU_SETTINGS);
 
-        JMenuItem rollCostItem = new JMenuItem("Roll Cost");
+        JMenuItem rollCostItem = new JMenuItem(MENU_ITEM_ROLL_COST);
         rollCostItem.addActionListener(e -> showRollCostDialog());
         settingsMenu.add(rollCostItem);
 
         settingsMenu.addSeparator();
 
-        JMenuItem tierModifiersItem = new JMenuItem("Tier Modifiers");
+        JMenuItem tierModifiersItem = new JMenuItem(MENU_ITEM_TIER_MODIFIERS);
         tierModifiersItem.addActionListener(e -> showTierModifiersDialog());
         settingsMenu.add(tierModifiersItem);
 
         appMenuBar.add(settingsMenu);
 
         // Help menu
-        JMenu helpMenu = new JMenu("Help");
+        JMenu helpMenu = new JMenu(MENU_HELP);
         JMenuItem errorStatsItem = new JMenuItem(ERROR_STATISTICS);
         errorStatsItem.addActionListener(e -> showErrorStatisticsDialog());
         helpMenu.add(errorStatsItem);
         helpMenu.addSeparator();
-        JMenuItem aboutItem = new JMenuItem("About");
+        JMenuItem aboutItem = new JMenuItem(MENU_ITEM_ABOUT);
         aboutItem.addActionListener(e -> showAboutDialog());
         helpMenu.add(aboutItem);
         appMenuBar.add(helpMenu);
@@ -203,7 +257,7 @@ public class EveMinerAnalyzer extends JFrame {
                 BorderFactory.createEmptyBorder(10, 10, 10, 10)));
 
         JLabel titleLabel = new JLabel(APP_NAME);
-        titleLabel.setFont(new Font(FONT_ARIAL, Font.BOLD, 16));
+        titleLabel.setFont(new Font(FONT_ARIAL, Font.BOLD, FONT_SIZE_TITLE));
         titleLabel.setForeground(themeManager.getFgColor());
         headerPanel.add(titleLabel, BorderLayout.NORTH);
 
@@ -217,33 +271,33 @@ public class EveMinerAnalyzer extends JFrame {
         typePanel.add(typeLabel);
 
         ButtonGroup typeGroup = new ButtonGroup();
-        oreRadio = new JRadioButton("ORE", true);
+        oreRadio = new JRadioButton(MINER_TYPE_ORE, true);
         oreRadio.setBackground(themeManager.getBgColor());
         oreRadio.setForeground(themeManager.getFgColor());
         oreRadio.addActionListener(e -> {
-            minerType = "ORE";
+            minerType = MINER_TYPE_ORE;
             clearResults();
             restartClipboardMonitoring();
         });
         typeGroup.add(oreRadio);
         typePanel.add(oreRadio);
 
-        modulatedRadio = new JRadioButton("Modulated");
+        modulatedRadio = new JRadioButton(MINER_TYPE_MODULATED);
         modulatedRadio.setBackground(themeManager.getBgColor());
         modulatedRadio.setForeground(themeManager.getFgColor());
         modulatedRadio.addActionListener(e -> {
-            minerType = "Modulated";
+            minerType = MINER_TYPE_MODULATED;
             clearResults();
             restartClipboardMonitoring();
         });
         typeGroup.add(modulatedRadio);
         typePanel.add(modulatedRadio);
 
-        iceRadio = new JRadioButton("Ice");
+        iceRadio = new JRadioButton(MINER_TYPE_ICE);
         iceRadio.setBackground(themeManager.getBgColor());
         iceRadio.setForeground(themeManager.getFgColor());
         iceRadio.addActionListener(e -> {
-            minerType = "Ice";
+            minerType = MINER_TYPE_ICE;
             clearResults();
             restartClipboardMonitoring();
         });
@@ -261,7 +315,7 @@ public class EveMinerAnalyzer extends JFrame {
         sellPriceLabel.setForeground(themeManager.getFgColor());
         sellPricePanel.add(sellPriceLabel);
 
-        copySellPriceButton = new JButton("Copy");
+        copySellPriceButton = new JButton(BUTTON_COPY);
         copySellPriceButton.setEnabled(false);
         copySellPriceButton.addActionListener(e -> copySellPriceToClipboard());
         sellPricePanel.add(copySellPriceButton);
@@ -286,7 +340,7 @@ public class EveMinerAnalyzer extends JFrame {
         resultsText.setEditable(false);
         resultsText.setBackground(themeManager.getFrameBg());
         resultsText.setForeground(themeManager.getFgColor());
-        resultsText.setFont(new Font("Consolas", Font.PLAIN, 10));
+        resultsText.setFont(new Font(FONT_CONSOLAS, Font.PLAIN, FONT_SIZE_RESULTS));
         resultsText.setCaretColor(themeManager.getFgColor()); // Ensure caret is visible
         doc = resultsText.getStyledDocument();
 
@@ -321,7 +375,8 @@ public class EveMinerAnalyzer extends JFrame {
         add(mainPanel);
 
         // Initial message
-        analysisDisplay.appendText("Miner type set to: ORE\n", themeManager.getFgColor());
+        analysisDisplay.appendText("Miner type set to: " + MINER_TYPE_ORE + "\n",
+                themeManager.getFgColor());
         analysisDisplay.appendText("Copy item stats from EVE Online to analyze.\n",
                 themeManager.getFgColor());
     }
@@ -634,7 +689,7 @@ public class EveMinerAnalyzer extends JFrame {
 
         // Create dialog
         JDialog dialog = new JDialog(this, "Tier Modifiers Settings", true);
-        dialog.setSize(400, 450);
+        dialog.setSize(DIALOG_WIDTH, DIALOG_HEIGHT);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(themeManager.getBgColor());
 
@@ -716,11 +771,11 @@ public class EveMinerAnalyzer extends JFrame {
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttonPanel.setBackground(themeManager.getBgColor());
 
-        JButton saveButton = new JButton("Save");
+        JButton saveButton = new JButton(BUTTON_SAVE);
         saveButton.addActionListener(
                 e -> handleSaveTierModifiers(dialog, tierTextFields, optimalRangeTextField, tiers));
 
-        JButton cancelButton = new JButton("Cancel");
+        JButton cancelButton = new JButton(BUTTON_CANCEL);
         cancelButton.addActionListener(e -> dialog.dispose());
 
         buttonPanel.add(cancelButton);
@@ -904,7 +959,7 @@ public class EveMinerAnalyzer extends JFrame {
 
         message.append("\nError log file: error.log");
         message.append("\nMonitoring: ")
-                .append(errorLogMonitor.isRunning() ? "Active" : "Inactive");
+                .append(errorLogMonitor.isRunning() ? STATUS_ACTIVE : STATUS_INACTIVE);
 
         JOptionPane.showMessageDialog(this, message.toString(), ERROR_STATISTICS,
                 JOptionPane.INFORMATION_MESSAGE);
@@ -919,7 +974,8 @@ public class EveMinerAnalyzer extends JFrame {
                 + "3. Analysis appears automatically\n\n"
                 + "Tier info is automatically copied to clipboard for easy container naming.";
 
-        JOptionPane.showMessageDialog(this, message, "About", JOptionPane.INFORMATION_MESSAGE);
+        JOptionPane.showMessageDialog(this, message, MENU_ITEM_ABOUT,
+                JOptionPane.INFORMATION_MESSAGE);
     }
 
     // ============================================================================

@@ -17,8 +17,9 @@ public class ThemeManager {
     private static final double GREEN_LUMINANCE_WEIGHT = 0.587;
     private static final double BLUE_LUMINANCE_WEIGHT = 0.114;
     private static final double MAX_COLOR_VALUE = 255.0; // Maximum RGB color value
-    private static final double BRIGHTNESS_THRESHOLD = 0.5; // Threshold for dark/light mode detection
-    
+    private static final double BRIGHTNESS_THRESHOLD = 0.5; // Threshold for dark/light mode
+                                                            // detection
+
     // Time conversion constants
     private static final int MILLISECONDS_PER_SECOND = 1000; // Convert seconds to milliseconds
 
@@ -49,8 +50,8 @@ public class ThemeManager {
     }
 
     /**
-     * Detects and applies the system theme, respecting any manual override settings.
-     * If manual override is set, uses that instead of system detection.
+     * Detects and applies the system theme, respecting any manual override settings. If manual
+     * override is set, uses that instead of system detection.
      */
     public void detectSystemTheme() {
         // Try to detect system theme
@@ -88,7 +89,8 @@ public class ThemeManager {
             Thread.currentThread().interrupt();
             return false;
         } catch (NoSuchMethodError e) {
-            ErrorLogger.logError("Process.waitFor with timeout not available (Java 7 compatibility)", e);
+            ErrorLogger.logError(
+                    "Process.waitFor with timeout not available (Java 7 compatibility)", e);
             // Fallback for Java 7: use simple waitFor with thread interrupt
             Thread waitThread = new Thread(() -> {
                 try {
@@ -98,10 +100,12 @@ public class ThemeManager {
                     Thread.currentThread().interrupt();
                 }
             });
+            waitThread.setDaemon(true);
             waitThread.start();
             try {
-                waitThread.join((long) timeoutSeconds * MILLISECONDS_PER_SECOND); // Wait max timeoutSeconds
-                                                                                   // milliseconds
+                waitThread.join((long) timeoutSeconds * MILLISECONDS_PER_SECOND); // Wait max
+                                                                                  // timeoutSeconds
+                                                                                  // milliseconds
                 return !waitThread.isAlive();
             } catch (InterruptedException ex) {
                 ErrorLogger.logError("Interrupted while joining process wait thread", ex);
@@ -189,9 +193,9 @@ public class ThemeManager {
             Color bg = UIManager.getColor("Panel.background");
             if (bg != null) {
                 // Dark mode typically has low brightness
-                double brightness = (bg.getRed() * RED_LUMINANCE_WEIGHT
-                        + bg.getGreen() * GREEN_LUMINANCE_WEIGHT + bg.getBlue() * BLUE_LUMINANCE_WEIGHT)
-                        / MAX_COLOR_VALUE;
+                double brightness =
+                        (bg.getRed() * RED_LUMINANCE_WEIGHT + bg.getGreen() * GREEN_LUMINANCE_WEIGHT
+                                + bg.getBlue() * BLUE_LUMINANCE_WEIGHT) / MAX_COLOR_VALUE;
                 return Optional.of(brightness < BRIGHTNESS_THRESHOLD);
             }
             return Optional.of(false);
@@ -297,9 +301,8 @@ public class ThemeManager {
     }
 
     /**
-     * Toggles between light and dark theme.
-     * If currently on auto mode, switches to the opposite of the current theme.
-     * If currently on manual mode, toggles between light and dark.
+     * Toggles between light and dark theme. If currently on auto mode, switches to the opposite of
+     * the current theme. If currently on manual mode, toggles between light and dark.
      */
     public void toggleTheme() {
         if (manualThemeOverride == null) {
@@ -337,7 +340,7 @@ public class ThemeManager {
     }
 
     // Getters
-    
+
     /**
      * Checks if dark mode is currently active.
      * 
@@ -375,8 +378,8 @@ public class ThemeManager {
     }
 
     /**
-     * Gets a map of tier colors (S, A, B, C, D, E, F) for displaying tier information.
-     * Returns a copy of the internal map to prevent external modification.
+     * Gets a map of tier colors (S, A, B, C, D, E, F) for displaying tier information. Returns a
+     * copy of the internal map to prevent external modification.
      * 
      * @return A map of tier letters to their corresponding colors
      */

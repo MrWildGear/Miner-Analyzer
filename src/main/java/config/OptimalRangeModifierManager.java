@@ -15,6 +15,10 @@ import util.ErrorLogger;
 public class OptimalRangeModifierManager {
 
     private static final double DEFAULT_MODIFIER = 1.0;
+    private static final double MIN_MODIFIER_VALUE = 0.0;
+
+    // File format constants
+    private static final String COMMENT_PREFIX = "#";
 
     /**
      * Private constructor to prevent instantiation of utility class
@@ -39,8 +43,8 @@ public class OptimalRangeModifierManager {
     private static Double parseModifierValue(String line) {
         try {
             double value = Double.parseDouble(line);
-            if (value < 0) {
-                value = 0.0; // Don't allow negative modifiers
+            if (value < MIN_MODIFIER_VALUE) {
+                value = MIN_MODIFIER_VALUE; // Don't allow negative modifiers
             }
             return value;
         } catch (NumberFormatException e) {
@@ -51,7 +55,10 @@ public class OptimalRangeModifierManager {
     }
 
     /**
-     * Loads optimal range modifier from file, or returns default if file doesn't exist
+     * Loads optimal range modifier from file, or returns default if file doesn't exist.
+     * 
+     * @return The optimal range modifier value (defaults to 1.0 if file doesn't exist or is
+     *         invalid)
      */
     public static double loadOptimalRangeModifier() {
         File modifiersFile = getModifiersFile();
@@ -71,7 +78,7 @@ public class OptimalRangeModifierManager {
             String line = reader.readLine();
             if (line != null) {
                 line = line.trim();
-                if (!line.isEmpty() && !line.startsWith("#")) {
+                if (!line.isEmpty() && !line.startsWith(COMMENT_PREFIX)) {
                     Double value = parseModifierValue(line);
                     if (value != null) {
                         return value;
@@ -88,7 +95,9 @@ public class OptimalRangeModifierManager {
     }
 
     /**
-     * Saves optimal range modifier to file
+     * Saves optimal range modifier to file.
+     * 
+     * @param modifier The modifier value to save
      */
     public static void saveOptimalRangeModifier(double modifier) {
         File modifiersFile = getModifiersFile();
@@ -110,7 +119,9 @@ public class OptimalRangeModifierManager {
     }
 
     /**
-     * Gets the default modifier
+     * Gets the default modifier value.
+     * 
+     * @return The default optimal range modifier (1.0)
      */
     public static double getDefaultModifier() {
         return DEFAULT_MODIFIER;

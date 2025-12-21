@@ -22,6 +22,9 @@ public class AnalysisDisplay {
 
     private static final String TIER_STYLE_PREFIX = "tier_";
     private static final String STYLE_HEADER = "header";
+    private static final String STYLE_DEFAULT = "default";
+    private static final String STYLE_GOOD = "good";
+    private static final String STYLE_BAD = "bad";
 
     // Stat key constants
     private static final String KEY_ACTIVATION_TIME = "ActivationTime";
@@ -65,7 +68,8 @@ public class AnalysisDisplay {
     private final java.util.function.Consumer<Double> sellPriceUpdater;
 
     // Style cache for frequently accessed styles to improve performance
-    private final Map<String, Style> styleCache = new java.util.HashMap<>();
+    // Using ConcurrentHashMap for thread safety (accessed from EDT)
+    private final Map<String, Style> styleCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     /**
      * Constructs an AnalysisDisplay with the given document, colors, and sell price updater.
@@ -157,7 +161,7 @@ public class AnalysisDisplay {
             return;
         }
         try {
-            Style defaultStyle = getOrCreateStyle("default");
+            Style defaultStyle = getOrCreateStyle(STYLE_DEFAULT);
             if (defaultStyle != null) {
                 StyleConstants.setForeground(defaultStyle, fgColor);
             }
@@ -189,7 +193,7 @@ public class AnalysisDisplay {
         }
         Color sColor = tierColors.get(TIER_S);
         if (sColor != null) {
-            Style goodStyle = getOrCreateStyle("good");
+            Style goodStyle = getOrCreateStyle(STYLE_GOOD);
             if (goodStyle != null) {
                 StyleConstants.setForeground(goodStyle, sColor);
             }
@@ -197,7 +201,7 @@ public class AnalysisDisplay {
 
         Color fColor = tierColors.get(TIER_F);
         if (fColor != null) {
-            Style badStyle = getOrCreateStyle("bad");
+            Style badStyle = getOrCreateStyle(STYLE_BAD);
             if (badStyle != null) {
                 StyleConstants.setForeground(badStyle, fColor);
             }
@@ -665,9 +669,9 @@ public class AnalysisDisplay {
 
     private String getColorTag(double value) {
         if (value > 0.1) {
-            return "good";
+            return STYLE_GOOD;
         } else if (value < -0.1) {
-            return "bad";
+            return STYLE_BAD;
         }
         return null;
     }
