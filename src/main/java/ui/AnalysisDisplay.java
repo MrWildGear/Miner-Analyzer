@@ -8,7 +8,9 @@ import javax.swing.text.Style;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyledDocument;
 import calculator.MiningCalculator;
+import config.ConfigManager;
 import config.MinerConfig;
+import config.TierModifierManager;
 import model.AnalysisResult;
 
 /**
@@ -42,15 +44,20 @@ public class AnalysisDisplay {
     private static final String FORMAT_LABEL_COLUMN = "%-20s ";
     private static final String FORMAT_HEADER_ROW = "%-20s %-20s %-20s %-20s%n";
     private static final String FORMAT_PERFORMANCE_VALUE = "%.2f (%.1f)%6s ";
+    private static final String FORMAT_COLUMN_WIDTH = "%-20s";
+    private static final String FORMAT_COLUMN_WIDTH_NEWLINE = "%-20s%n";
 
     private final StyledDocument doc;
     private Color fgColor;
     private final Map<String, Color> tierColors;
+    private final java.util.function.Consumer<Double> sellPriceUpdater;
 
-    public AnalysisDisplay(StyledDocument doc, Color fgColor, Map<String, Color> tierColors) {
+    public AnalysisDisplay(StyledDocument doc, Color fgColor, Map<String, Color> tierColors,
+            java.util.function.Consumer<Double> sellPriceUpdater) {
         this.doc = doc;
         this.fgColor = fgColor;
         this.tierColors = new java.util.HashMap<>(tierColors);
+        this.sellPriceUpdater = sellPriceUpdater;
         setupTextStyles();
     }
 
@@ -208,6 +215,11 @@ public class AnalysisDisplay {
             displayTierSection(analysis, minerType);
             copyToClipboard(analysis.getTier(), minerType, baseM3Pct);
 
+            // Calculate and display sell price
+            if (sellPriceUpdater != null) {
+                sellPriceUpdater.accept(calculateSellPrice(analysis, baseM3Pct));
+            }
+
         } catch (BadLocationException e) {
             e.printStackTrace();
         }
@@ -227,23 +239,23 @@ public class AnalysisDisplay {
         appendText(repeat("-", 76) + "\n", fgColor);
 
         displayMetricRow("Mining Amount", stats.get(KEY_MINING_AMOUNT),
-                baseStats.get(KEY_MINING_AMOUNT), "%.1f m3%12s ", false);
+                baseStats.get(KEY_MINING_AMOUNT), "%.1f m3", false);
         displayMetricRow("Activation Time", stats.get(KEY_ACTIVATION_TIME),
-                baseStats.get(KEY_ACTIVATION_TIME), "%.1f s%13s ", true);
+                baseStats.get(KEY_ACTIVATION_TIME), "%.1f s", true);
         displayPercentageMetricRow("Crit Chance", stats.get(KEY_CRITICAL_SUCCESS_CHANCE),
-                baseStats.get(KEY_CRITICAL_SUCCESS_CHANCE), "%.2f%%%15s ", false);
+                baseStats.get(KEY_CRITICAL_SUCCESS_CHANCE), "%.2f%%", false);
         displayPercentageMetricRow("Crit Bonus", stats.get(KEY_CRITICAL_SUCCESS_BONUS_YIELD),
-                baseStats.get(KEY_CRITICAL_SUCCESS_BONUS_YIELD), "%.0f%%%16s ", false);
+                baseStats.get(KEY_CRITICAL_SUCCESS_BONUS_YIELD), "%.0f%%", false);
 
         if (MINER_TYPE_MODULATED.equals(minerType)) {
             displayPercentageMetricRow("Residue Prob", stats.get(KEY_RESIDUE_PROBABILITY),
-                    baseStats.get(KEY_RESIDUE_PROBABILITY), "%.2f%%%15s ", true);
+                    baseStats.get(KEY_RESIDUE_PROBABILITY), "%.2f%%", true);
             displayMetricRow("Residue Mult", stats.get(KEY_RESIDUE_VOLUME_MULTIPLIER),
-                    baseStats.get(KEY_RESIDUE_VOLUME_MULTIPLIER), "%.3f x%14s ", true);
+                    baseStats.get(KEY_RESIDUE_VOLUME_MULTIPLIER), "%.3f x", true);
         }
 
         displayMetricRow("Optimal Range", stats.get(KEY_OPTIMAL_RANGE),
-                baseStats.get(KEY_OPTIMAL_RANGE), "%.2f km%14s ", false);
+                baseStats.get(KEY_OPTIMAL_RANGE), "%.2f km", false);
         appendText("\n", fgColor);
     }
 
@@ -252,8 +264,26 @@ public class AnalysisDisplay {
         double mutation = calculatePercentageChange(rolled, base);
         String tag = getColorTag(invertColor ? -mutation : mutation);
         appendText(String.format(FORMAT_LABEL_COLUMN, label), fgColor);
-        appendText(String.format(format, base != null ? base : 0.0, ""), fgColor);
-        displayMetricValue(format, rolled != null ? rolled : 0.0, mutation, tag);
+
+        // Format base value with unit - pad to exactly 20 characters to match header
+        String baseFormatted = String.format(format, base != null ? base : 0.0);
+        appendText(String.format(FORMAT_COLUMN_WIDTH, baseFormatted), fgColor);
+
+        // Format rolled value with unit - pad to exactly 20 characters to match header
+        String rolledFormatted = String.format(format, rolled != null ? rolled : 0.0);
+        if (tag != null) {
+            appendStyledText(String.format(FORMAT_COLUMN_WIDTH, rolledFormatted), tag);
+        } else {
+            appendText(String.format(FORMAT_COLUMN_WIDTH, rolledFormatted), fgColor);
+        }
+
+        // Format percentage change - pad to exactly 20 characters to match header
+        String percentageStr = formatPercentage(mutation);
+        if (tag != null) {
+            appendStyledText(String.format(FORMAT_COLUMN_WIDTH_NEWLINE, percentageStr), tag);
+        } else {
+            appendText(String.format(FORMAT_COLUMN_WIDTH_NEWLINE, percentageStr), fgColor);
+        }
     }
 
     private void displayPercentageMetricRow(String label, Double rolled, Double base, String format,
@@ -261,17 +291,25 @@ public class AnalysisDisplay {
         double mutation = calculatePercentageChange(rolled, base);
         String tag = getColorTag(invertColor ? -mutation : mutation);
         appendText(String.format(FORMAT_LABEL_COLUMN, label), fgColor);
-        appendText(String.format(format, (base != null ? base : 0.0) * 100, ""), fgColor);
-        displayMetricValue(format, (rolled != null ? rolled : 0.0) * 100, mutation, tag);
-    }
 
-    private void displayMetricValue(String format, double value, double mutation, String tag) {
+        // Format base value as percentage - pad to exactly 20 characters to match header
+        String baseFormatted = String.format(format, (base != null ? base : 0.0) * 100);
+        appendText(String.format(FORMAT_COLUMN_WIDTH, baseFormatted), fgColor);
+
+        // Format rolled value as percentage - pad to exactly 20 characters to match header
+        String rolledFormatted = String.format(format, (rolled != null ? rolled : 0.0) * 100);
         if (tag != null) {
-            appendStyledText(String.format(format, value, ""), tag);
-            appendStyledText(formatPercentage(mutation) + "\n", tag);
+            appendStyledText(String.format(FORMAT_COLUMN_WIDTH, rolledFormatted), tag);
         } else {
-            appendText(String.format(format, value, ""), fgColor);
-            appendText(formatPercentage(mutation) + "\n", fgColor);
+            appendText(String.format(FORMAT_COLUMN_WIDTH, rolledFormatted), fgColor);
+        }
+
+        // Format percentage change - pad to exactly 20 characters to match header
+        String percentageStr = formatPercentage(mutation);
+        if (tag != null) {
+            appendStyledText(String.format(FORMAT_COLUMN_WIDTH_NEWLINE, percentageStr), tag);
+        } else {
+            appendText(String.format(FORMAT_COLUMN_WIDTH_NEWLINE, percentageStr), fgColor);
         }
     }
 
@@ -504,20 +542,19 @@ public class AnalysisDisplay {
     }
 
     private String formatPercentage(double value) {
+        // Format percentage - will be padded to 20 chars in the calling method
         if (value > 0.1) {
-            // Add leading zero for values less than 10% for proper string sorting
             if (value < 10.0) {
-                return String.format("+%04.1f%%", value);
+                return String.format("+%04.1f%%", value); // e.g., +05.3%
             } else {
-                return String.format("+%.1f%%", value);
+                return String.format("+%.1f%%", value); // e.g., +22.4% or +123.4%
             }
         } else if (value < -0.1) {
-            // Add leading zero for negative values (absolute value less than 10%) for proper string sorting
             double absValue = Math.abs(value);
             if (absValue < 10.0) {
-                return String.format("-%04.1f%%", absValue);
+                return String.format("-%04.1f%%", absValue); // e.g., -04.1%
             } else {
-                return String.format("%.1f%%", value);
+                return String.format("%.1f%%", value); // e.g., -07.5% or -123.4%
             }
         } else {
             return "+0.0%";
@@ -531,6 +568,24 @@ public class AnalysisDisplay {
             return "bad";
         }
         return null;
+    }
+
+    /**
+     * Calculates sell price based on formula: cost * tier_modifier * (100% + baseM3Pct%)
+     */
+    private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct) {
+        double cost = ConfigManager.getRollCost();
+        if (cost <= 0) {
+            return 0.0;
+        }
+
+        String tier = analysis.getTier() != null ? analysis.getTier() : "F";
+        double tierModifier = TierModifierManager.getModifierForTier(tier);
+
+        // Formula: cost * tier_modifier * (100% + baseM3Pct%)
+        // baseM3Pct is already a percentage, so convert to multiplier: 1 + (baseM3Pct / 100)
+        double m3Multiplier = 1.0 + (baseM3Pct / 100.0);
+        return cost * tierModifier * m3Multiplier;
     }
 }
 
