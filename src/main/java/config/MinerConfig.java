@@ -43,6 +43,45 @@ public class MinerConfig {
     public static final double INDUSTRIAL_CORE_CYCLE_TIME = 0.75;
     public static final double CALIBRATION_MULTIPLIER = 1.35;
 
+    // ============================================================================
+    // STAT STRING CONSTANTS
+    // ============================================================================
+
+    private static final String ACTIVATION_COST = "ActivationCost";
+    private static final String STRUCTURE_HITPOINTS = "StructureHitpoints";
+    private static final String VOLUME = "Volume";
+    private static final String OPTIMAL_RANGE = "OptimalRange";
+    private static final String ACTIVATION_TIME = "ActivationTime";
+    private static final String MINING_AMOUNT = "MiningAmount";
+    private static final String CRITICAL_SUCCESS_CHANCE = "CriticalSuccessChance";
+    private static final String RESIDUE_VOLUME_MULTIPLIER = "ResidueVolumeMultiplier";
+    private static final String RESIDUE_PROBABILITY = "ResidueProbability";
+    private static final String TECH_LEVEL = "TechLevel";
+    private static final String CRITICAL_SUCCESS_BONUS_YIELD = "CriticalSuccessBonusYield";
+    private static final String META_LEVEL = "MetaLevel";
+    private static final String CAPACITY = "Capacity";
+
+    // ============================================================================
+    // TIER STRING CONSTANTS
+    // ============================================================================
+
+    private static final String MIN = "Min";
+    private static final String MAX = "Max";
+    private static final String TIER_S = "S";
+    private static final String TIER_A = "A";
+    private static final String TIER_B = "B";
+    private static final String TIER_C = "C";
+    private static final String TIER_D = "D";
+    private static final String TIER_E = "E";
+    private static final String TIER_F = "F";
+
+    // ============================================================================
+    // MINER TYPE CONSTANTS
+    // ============================================================================
+
+    private static final String MINER_TYPE_ORE = "ORE";
+    private static final String MINER_TYPE_ICE = "Ice";
+
     static {
         initializeOreBaseStats();
         initializeModulatedBaseStats();
@@ -53,163 +92,163 @@ public class MinerConfig {
     }
 
     private static void initializeOreBaseStats() {
-        ORE_BASE_STATS.put("ActivationCost", 23.0);
-        ORE_BASE_STATS.put("StructureHitpoints", 40.0);
-        ORE_BASE_STATS.put("Volume", 5.0);
-        ORE_BASE_STATS.put("OptimalRange", 18.75);
-        ORE_BASE_STATS.put("ActivationTime", 45.0);
-        ORE_BASE_STATS.put("MiningAmount", 200.0);
-        ORE_BASE_STATS.put("CriticalSuccessChance", 0.01);
-        ORE_BASE_STATS.put("ResidueVolumeMultiplier", 0.0);
-        ORE_BASE_STATS.put("ResidueProbability", 0.0);
-        ORE_BASE_STATS.put("TechLevel", 1.0);
-        ORE_BASE_STATS.put("CriticalSuccessBonusYield", 2.0);
-        ORE_BASE_STATS.put("MetaLevel", 6.0);
+        ORE_BASE_STATS.put(ACTIVATION_COST, 23.0);
+        ORE_BASE_STATS.put(STRUCTURE_HITPOINTS, 40.0);
+        ORE_BASE_STATS.put(VOLUME, 5.0);
+        ORE_BASE_STATS.put(OPTIMAL_RANGE, 18.75);
+        ORE_BASE_STATS.put(ACTIVATION_TIME, 45.0);
+        ORE_BASE_STATS.put(MINING_AMOUNT, 200.0);
+        ORE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01);
+        ORE_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 0.0);
+        ORE_BASE_STATS.put(RESIDUE_PROBABILITY, 0.0);
+        ORE_BASE_STATS.put(TECH_LEVEL, 1.0);
+        ORE_BASE_STATS.put(CRITICAL_SUCCESS_BONUS_YIELD, 2.0);
+        ORE_BASE_STATS.put(META_LEVEL, 6.0);
     }
 
     private static void initializeModulatedBaseStats() {
-        MODULATED_BASE_STATS.put("ActivationCost", 30.0);
-        MODULATED_BASE_STATS.put("StructureHitpoints", 40.0);
-        MODULATED_BASE_STATS.put("Volume", 5.0);
-        MODULATED_BASE_STATS.put("Capacity", 10.0);
-        MODULATED_BASE_STATS.put("OptimalRange", 15.00);
-        MODULATED_BASE_STATS.put("ActivationTime", 45.0);
-        MODULATED_BASE_STATS.put("MiningAmount", 120.0);
-        MODULATED_BASE_STATS.put("CriticalSuccessChance", 0.01);
-        MODULATED_BASE_STATS.put("ResidueVolumeMultiplier", 1.0);
-        MODULATED_BASE_STATS.put("ResidueProbability", 0.34);
-        MODULATED_BASE_STATS.put("TechLevel", 2.0);
-        MODULATED_BASE_STATS.put("CriticalSuccessBonusYield", 2.0);
-        MODULATED_BASE_STATS.put("MetaLevel", 5.0);
+        MODULATED_BASE_STATS.put(ACTIVATION_COST, 30.0);
+        MODULATED_BASE_STATS.put(STRUCTURE_HITPOINTS, 40.0);
+        MODULATED_BASE_STATS.put(VOLUME, 5.0);
+        MODULATED_BASE_STATS.put(CAPACITY, 10.0);
+        MODULATED_BASE_STATS.put(OPTIMAL_RANGE, 15.00);
+        MODULATED_BASE_STATS.put(ACTIVATION_TIME, 45.0);
+        MODULATED_BASE_STATS.put(MINING_AMOUNT, 120.0);
+        MODULATED_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01);
+        MODULATED_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 1.0);
+        MODULATED_BASE_STATS.put(RESIDUE_PROBABILITY, 0.34);
+        MODULATED_BASE_STATS.put(TECH_LEVEL, 2.0);
+        MODULATED_BASE_STATS.put(CRITICAL_SUCCESS_BONUS_YIELD, 2.0);
+        MODULATED_BASE_STATS.put(META_LEVEL, 5.0);
     }
 
     private static void initializeIceBaseStats() {
         // ORE Ice Harvester base stats
         // Activation time: 3m 20s = 200 seconds
-        ICE_BASE_STATS.put("ActivationCost", 12.0);
-        ICE_BASE_STATS.put("StructureHitpoints", 40.0);
-        ICE_BASE_STATS.put("Volume", 5.0);
-        ICE_BASE_STATS.put("OptimalRange", 12.50);
-        ICE_BASE_STATS.put("ActivationTime", 200.0); // 3m 20s = 200s
-        ICE_BASE_STATS.put("MiningAmount", 1000.0);
-        ICE_BASE_STATS.put("CriticalSuccessChance", 0.01); // 1%
-        ICE_BASE_STATS.put("CriticalSuccessBonusYield", 2.0); // 200%
-        ICE_BASE_STATS.put("ResidueProbability", 0.0);
-        ICE_BASE_STATS.put("ResidueVolumeMultiplier", 0.0);
-        ICE_BASE_STATS.put("TechLevel", 1.0);
-        ICE_BASE_STATS.put("MetaLevel", 6.0);
+        ICE_BASE_STATS.put(ACTIVATION_COST, 12.0);
+        ICE_BASE_STATS.put(STRUCTURE_HITPOINTS, 40.0);
+        ICE_BASE_STATS.put(VOLUME, 5.0);
+        ICE_BASE_STATS.put(OPTIMAL_RANGE, 12.50);
+        ICE_BASE_STATS.put(ACTIVATION_TIME, 200.0); // 3m 20s = 200s
+        ICE_BASE_STATS.put(MINING_AMOUNT, 1000.0);
+        ICE_BASE_STATS.put(CRITICAL_SUCCESS_CHANCE, 0.01); // 1%
+        ICE_BASE_STATS.put(CRITICAL_SUCCESS_BONUS_YIELD, 2.0); // 200%
+        ICE_BASE_STATS.put(RESIDUE_PROBABILITY, 0.0);
+        ICE_BASE_STATS.put(RESIDUE_VOLUME_MULTIPLIER, 0.0);
+        ICE_BASE_STATS.put(TECH_LEVEL, 1.0);
+        ICE_BASE_STATS.put(META_LEVEL, 6.0);
     }
 
     private static void initializeOreTierRanges() {
         Map<String, Double> sRange = new HashMap<>();
-        sRange.put("Min", 6.27);
-        sRange.put("Max", 6.61);
-        ORE_TIER_RANGES.put("S", sRange);
+        sRange.put(MIN, 6.27);
+        sRange.put(MAX, 6.61);
+        ORE_TIER_RANGES.put(TIER_S, sRange);
 
         Map<String, Double> aRange = new HashMap<>();
-        aRange.put("Min", 5.92);
-        aRange.put("Max", 6.27);
-        ORE_TIER_RANGES.put("A", aRange);
+        aRange.put(MIN, 5.92);
+        aRange.put(MAX, 6.27);
+        ORE_TIER_RANGES.put(TIER_A, aRange);
 
         Map<String, Double> bRange = new HashMap<>();
-        bRange.put("Min", 5.57);
-        bRange.put("Max", 5.92);
-        ORE_TIER_RANGES.put("B", bRange);
+        bRange.put(MIN, 5.57);
+        bRange.put(MAX, 5.92);
+        ORE_TIER_RANGES.put(TIER_B, bRange);
 
         Map<String, Double> cRange = new HashMap<>();
-        cRange.put("Min", 5.23);
-        cRange.put("Max", 5.57);
-        ORE_TIER_RANGES.put("C", cRange);
+        cRange.put(MIN, 5.23);
+        cRange.put(MAX, 5.57);
+        ORE_TIER_RANGES.put(TIER_C, cRange);
 
         Map<String, Double> dRange = new HashMap<>();
-        dRange.put("Min", 4.88);
-        dRange.put("Max", 5.23);
-        ORE_TIER_RANGES.put("D", dRange);
+        dRange.put(MIN, 4.88);
+        dRange.put(MAX, 5.23);
+        ORE_TIER_RANGES.put(TIER_D, dRange);
 
         Map<String, Double> eRange = new HashMap<>();
-        eRange.put("Min", 4.44);
-        eRange.put("Max", 4.88);
-        ORE_TIER_RANGES.put("E", eRange);
+        eRange.put(MIN, 4.44);
+        eRange.put(MAX, 4.88);
+        ORE_TIER_RANGES.put(TIER_E, eRange);
 
         Map<String, Double> fRange = new HashMap<>();
-        fRange.put("Min", 0.0);
-        fRange.put("Max", 4.44);
-        ORE_TIER_RANGES.put("F", fRange);
+        fRange.put(MIN, 0.0);
+        fRange.put(MAX, 4.44);
+        ORE_TIER_RANGES.put(TIER_F, fRange);
     }
 
     private static void initializeModulatedTierRanges() {
         Map<String, Double> modSRange = new HashMap<>();
-        modSRange.put("Min", 3.76188);
-        modSRange.put("Max", 3.97);
-        MODULATED_TIER_RANGES.put("S", modSRange);
+        modSRange.put(MIN, 3.76188);
+        modSRange.put(MAX, 3.97);
+        MODULATED_TIER_RANGES.put(TIER_S, modSRange);
 
         Map<String, Double> modARange = new HashMap<>();
-        modARange.put("Min", 3.55376);
-        modARange.put("Max", 3.76188);
-        MODULATED_TIER_RANGES.put("A", modARange);
+        modARange.put(MIN, 3.55376);
+        modARange.put(MAX, 3.76188);
+        MODULATED_TIER_RANGES.put(TIER_A, modARange);
 
         Map<String, Double> modBRange = new HashMap<>();
-        modBRange.put("Min", 3.34564);
-        modBRange.put("Max", 3.55376);
-        MODULATED_TIER_RANGES.put("B", modBRange);
+        modBRange.put(MIN, 3.34564);
+        modBRange.put(MAX, 3.55376);
+        MODULATED_TIER_RANGES.put(TIER_B, modBRange);
 
         Map<String, Double> modCRange = new HashMap<>();
-        modCRange.put("Min", 3.13752);
-        modCRange.put("Max", 3.34564);
-        MODULATED_TIER_RANGES.put("C", modCRange);
+        modCRange.put(MIN, 3.13752);
+        modCRange.put(MAX, 3.34564);
+        MODULATED_TIER_RANGES.put(TIER_C, modCRange);
 
         Map<String, Double> modDRange = new HashMap<>();
-        modDRange.put("Min", 2.92940);
-        modDRange.put("Max", 3.13752);
-        MODULATED_TIER_RANGES.put("D", modDRange);
+        modDRange.put(MIN, 2.92940);
+        modDRange.put(MAX, 3.13752);
+        MODULATED_TIER_RANGES.put(TIER_D, modDRange);
 
         Map<String, Double> modERange = new HashMap<>();
-        modERange.put("Min", 2.67);
-        modERange.put("Max", 2.92940);
-        MODULATED_TIER_RANGES.put("E", modERange);
+        modERange.put(MIN, 2.67);
+        modERange.put(MAX, 2.92940);
+        MODULATED_TIER_RANGES.put(TIER_E, modERange);
 
         Map<String, Double> modFRange = new HashMap<>();
-        modFRange.put("Min", 0.0);
-        modFRange.put("Max", 2.67);
-        MODULATED_TIER_RANGES.put("F", modFRange);
+        modFRange.put(MIN, 0.0);
+        modFRange.put(MAX, 2.67);
+        MODULATED_TIER_RANGES.put(TIER_F, modFRange);
     }
 
     private static void initializeIceTierRanges() {
         // Ice tier ranges based on m³/sec
         Map<String, Double> sRange = new HashMap<>();
-        sRange.put("Min", 7.033);
-        sRange.put("Max", 7.44);
-        ICE_TIER_RANGES.put("S", sRange);
+        sRange.put(MIN, 7.033);
+        sRange.put(MAX, 7.44);
+        ICE_TIER_RANGES.put(TIER_S, sRange);
 
         Map<String, Double> aRange = new HashMap<>();
-        aRange.put("Min", 6.627);
-        aRange.put("Max", 7.033);
-        ICE_TIER_RANGES.put("A", aRange);
+        aRange.put(MIN, 6.627);
+        aRange.put(MAX, 7.033);
+        ICE_TIER_RANGES.put(TIER_A, aRange);
 
         Map<String, Double> bRange = new HashMap<>();
-        bRange.put("Min", 6.220);
-        bRange.put("Max", 6.627);
-        ICE_TIER_RANGES.put("B", bRange);
+        bRange.put(MIN, 6.220);
+        bRange.put(MAX, 6.627);
+        ICE_TIER_RANGES.put(TIER_B, bRange);
 
         Map<String, Double> cRange = new HashMap<>();
-        cRange.put("Min", 5.813);
-        cRange.put("Max", 6.220);
-        ICE_TIER_RANGES.put("C", cRange);
+        cRange.put(MIN, 5.813);
+        cRange.put(MAX, 6.220);
+        ICE_TIER_RANGES.put(TIER_C, cRange);
 
         Map<String, Double> dRange = new HashMap<>();
-        dRange.put("Min", 5.407);
-        dRange.put("Max", 5.813);
-        ICE_TIER_RANGES.put("D", dRange);
+        dRange.put(MIN, 5.407);
+        dRange.put(MAX, 5.813);
+        ICE_TIER_RANGES.put(TIER_D, dRange);
 
         Map<String, Double> eRange = new HashMap<>();
-        eRange.put("Min", 5.000);
-        eRange.put("Max", 5.407);
-        ICE_TIER_RANGES.put("E", eRange);
+        eRange.put(MIN, 5.000);
+        eRange.put(MAX, 5.407);
+        ICE_TIER_RANGES.put(TIER_E, eRange);
 
         Map<String, Double> fRange = new HashMap<>();
-        fRange.put("Min", 0.0);
-        fRange.put("Max", 5.000);
-        ICE_TIER_RANGES.put("F", fRange);
+        fRange.put(MIN, 0.0);
+        fRange.put(MAX, 5.000);
+        ICE_TIER_RANGES.put(TIER_F, fRange);
     }
 
     // ============================================================================
@@ -229,9 +268,9 @@ public class MinerConfig {
     }
 
     public static Map<String, Double> getBaseStats(String minerType) {
-        if ("ORE".equals(minerType)) {
+        if (MINER_TYPE_ORE.equals(minerType)) {
             return getOreBaseStats();
-        } else if ("Ice".equals(minerType)) {
+        } else if (MINER_TYPE_ICE.equals(minerType)) {
             return getIceBaseStats();
         } else {
             return getModulatedBaseStats();
@@ -266,9 +305,9 @@ public class MinerConfig {
     }
 
     public static Map<String, Map<String, Double>> getTierRanges(String minerType) {
-        if ("ORE".equals(minerType)) {
+        if (MINER_TYPE_ORE.equals(minerType)) {
             return getOreTierRanges();
-        } else if ("Ice".equals(minerType)) {
+        } else if (MINER_TYPE_ICE.equals(minerType)) {
             return getIceTierRanges();
         } else {
             return getModulatedTierRanges();
