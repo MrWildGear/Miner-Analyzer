@@ -10,6 +10,8 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.Map;
 import javax.swing.BorderFactory;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
 import javax.swing.JDialog;
@@ -30,6 +32,7 @@ import javax.swing.WindowConstants;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.StyledDocument;
 import config.ConfigManager;
+import config.OptimalRangeModifierManager;
 import config.TierModifierManager;
 import service.ClipboardMonitor;
 import ui.AnalysisDisplay;
@@ -42,7 +45,7 @@ import ui.ThemeManager;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.3";
+    private static final String VERSION = "1.4.6";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
@@ -575,11 +578,12 @@ public class EveMinerAnalyzer extends JFrame {
     private void showTierModifiersDialog() {
         // Load current modifiers from config
         Map<String, Double> currentModifiers = TierModifierManager.loadTierModifiers();
+        double currentOptimalRangeModifier = OptimalRangeModifierManager.loadOptimalRangeModifier();
         String[] tiers = {"S", "A", "B", "C", "D", "E", "F"};
 
         // Create dialog
         JDialog dialog = new JDialog(this, "Tier Modifiers Settings", true);
-        dialog.setSize(300, 350);
+        dialog.setSize(400, 450);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(themeManager.getBgColor());
 
@@ -588,13 +592,24 @@ public class EveMinerAnalyzer extends JFrame {
         dialogPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         dialogPanel.setBackground(themeManager.getBgColor());
 
-        // Create panel for tier inputs
+        // Create main panel with scroll pane
+        JPanel mainContentPanel = new JPanel();
+        mainContentPanel.setLayout(new BoxLayout(mainContentPanel, BoxLayout.Y_AXIS));
+        mainContentPanel.setBackground(themeManager.getBgColor());
+
+        // Tier modifiers section
+        JLabel tierSectionLabel = new JLabel("Tier Modifiers:");
+        tierSectionLabel.setForeground(themeManager.getFgColor());
+        tierSectionLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        tierSectionLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+        mainContentPanel.add(tierSectionLabel);
+
         JPanel tierPanel = new JPanel();
         tierPanel.setLayout(new java.awt.GridLayout(tiers.length, 2, 5, 5));
         tierPanel.setBackground(themeManager.getBgColor());
 
-        // Store text fields in a map for later retrieval
-        Map<String, JTextField> textFields = new java.util.HashMap<>();
+        // Store text fields in maps for later retrieval
+        Map<String, JTextField> tierTextFields = new java.util.HashMap<>();
 
         // Create labels and text fields for each tier
         for (String tier : tiers) {
@@ -606,11 +621,45 @@ public class EveMinerAnalyzer extends JFrame {
                     new JTextField(String.valueOf(currentModifiers.getOrDefault(tier, 1.0)));
             textField.setBackground(themeManager.getFrameBg());
             textField.setForeground(themeManager.getFgColor());
-            textFields.put(tier, textField);
+            tierTextFields.put(tier, textField);
             tierPanel.add(textField);
         }
+        mainContentPanel.add(tierPanel);
 
-        dialogPanel.add(tierPanel, BorderLayout.CENTER);
+        // Add spacing
+        mainContentPanel.add(Box.createVerticalStrut(20));
+
+        // Optimal Range Modifier section
+        JLabel optimalRangeSectionLabel =
+                new JLabel("Optimal Range Modifier (applies when tier has '+'):");
+        optimalRangeSectionLabel.setForeground(themeManager.getFgColor());
+        optimalRangeSectionLabel.setFont(new Font("Arial", Font.BOLD, 12));
+        optimalRangeSectionLabel.setBorder(BorderFactory.createEmptyBorder(0, 0, 5, 0));
+        mainContentPanel.add(optimalRangeSectionLabel);
+
+        JPanel optimalRangePanel = new JPanel();
+        optimalRangePanel.setLayout(new java.awt.GridLayout(1, 2, 5, 5));
+        optimalRangePanel.setBackground(themeManager.getBgColor());
+
+        JLabel optimalRangeLabel = new JLabel("Modifier:");
+        optimalRangeLabel.setForeground(themeManager.getFgColor());
+        optimalRangePanel.add(optimalRangeLabel);
+
+        JTextField optimalRangeTextField =
+                new JTextField(String.valueOf(currentOptimalRangeModifier));
+        optimalRangeTextField.setBackground(themeManager.getFrameBg());
+        optimalRangeTextField.setForeground(themeManager.getFgColor());
+        optimalRangePanel.add(optimalRangeTextField);
+
+        mainContentPanel.add(optimalRangePanel);
+
+        // Wrap in scroll pane
+        JScrollPane scrollPane = new JScrollPane(mainContentPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder(0, 0, 0, 0));
+        scrollPane.setBackground(themeManager.getBgColor());
+        scrollPane.getViewport().setBackground(themeManager.getBgColor());
+
+        dialogPanel.add(scrollPane, BorderLayout.CENTER);
 
         // Create button panel
         JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
@@ -618,13 +667,13 @@ public class EveMinerAnalyzer extends JFrame {
 
         JButton saveButton = new JButton("Save");
         saveButton.addActionListener(e -> {
-            Map<String, Double> newModifiers = new java.util.HashMap<>();
+            Map<String, Double> newTierModifiers = new java.util.HashMap<>();
             boolean hasError = false;
             StringBuilder errorMessage = new StringBuilder("Invalid values:\n");
 
-            // Validate and collect new values
+            // Validate and collect tier modifier values
             for (String tier : tiers) {
-                JTextField textField = textFields.get(tier);
+                JTextField textField = tierTextFields.get(tier);
                 String text = textField.getText().trim();
                 if (text.isEmpty()) {
                     hasError = true;
@@ -633,7 +682,7 @@ public class EveMinerAnalyzer extends JFrame {
                 }
                 try {
                     double value = Double.parseDouble(text);
-                    newModifiers.put(tier, value);
+                    newTierModifiers.put(tier, value);
                 } catch (NumberFormatException ignored) {
                     hasError = true;
                     errorMessage.append(TIER_PREFIX).append(tier)
@@ -641,11 +690,31 @@ public class EveMinerAnalyzer extends JFrame {
                 }
             }
 
+            // Validate optimal range modifier
+            String optimalRangeText = optimalRangeTextField.getText().trim();
+            if (optimalRangeText.isEmpty()) {
+                hasError = true;
+                errorMessage.append("Optimal Range Modifier cannot be empty\n");
+            } else {
+                try {
+                    double value = Double.parseDouble(optimalRangeText);
+                    if (value < 0) {
+                        hasError = true;
+                        errorMessage.append("Optimal Range Modifier cannot be negative\n");
+                    }
+                } catch (NumberFormatException ignored) {
+                    hasError = true;
+                    errorMessage.append("Optimal Range Modifier: invalid number format\n");
+                }
+            }
+
             if (!hasError) {
-                // Save modifiers
-                TierModifierManager.saveTierModifiers(newModifiers);
+                // Save both modifiers
+                TierModifierManager.saveTierModifiers(newTierModifiers);
+                OptimalRangeModifierManager
+                        .saveOptimalRangeModifier(Double.parseDouble(optimalRangeText));
                 dialog.dispose();
-                JOptionPane.showMessageDialog(this, "Tier modifiers saved successfully.",
+                JOptionPane.showMessageDialog(this, "Modifiers saved successfully.",
                         "Settings Saved", JOptionPane.INFORMATION_MESSAGE);
                 // Update sell price if analysis is displayed
                 updateSellPriceIfNeeded();

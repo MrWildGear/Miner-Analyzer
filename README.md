@@ -1,6 +1,6 @@
 # EVE Online Strip Miner Roll Analyzer
 
-A Java GUI application that analyzes EVE Online Strip Miner rolls by monitoring your clipboard. Supports both ORE Strip Miner and Modulated Strip Miner II.
+A Java GUI application that analyzes EVE Online Strip Miner rolls by monitoring your clipboard. Supports ORE Strip Miner, Modulated Strip Miner II, and ORE Ice Harvester.
 
 ## 🚀 Quick Start
 
@@ -15,10 +15,12 @@ It will automatically:
 ## Features
 
 - **Real-time clipboard monitoring** - Automatically analyzes items when you copy stats from EVE Online
-- **Dual miner support** - Switch between ORE and Modulated Strip Miner analysis
-- **System theme support** - Automatically detects and uses your system's light/dark theme
+- **Triple miner support** - Switch between ORE, Modulated, and Ice Harvester analysis
+- **Theme customization** - Manual theme control (Light/Dark/Auto) with system theme detection
 - **Tier assignment** - Automatically assigns tiers (S, A, B, C, D, E, F) based on base m³/s
 - **Comprehensive metrics** - Shows base, effective, and real-world m³/s values
+- **Sell price calculation** - Calculates and displays recommended sell price based on roll cost and tier modifiers
+- **Customizable settings** - Configure roll cost and tier modifiers via Settings menu
 - **Clipboard output** - Automatically copies tier and percentage to clipboard for easy container naming
 
 ## Project Structure
@@ -35,7 +37,10 @@ Rolled Mods/
 │           ├── calculator/
 │           │   └── MiningCalculator.java     # Mining calculations
 │           ├── config/
-│           │   └── MinerConfig.java          # Configuration and tier ranges
+│           │   ├── ConfigManager.java         # Configuration file management
+│           │   ├── MinerConfig.java           # Configuration and tier ranges
+│           │   ├── OptimalRangeModifierManager.java  # Optimal range modifier management
+│           │   └── TierModifierManager.java   # Tier modifier management
 │           ├── model/
 │           │   └── AnalysisResult.java       # Data model
 │           ├── parser/
@@ -53,6 +58,11 @@ Rolled Mods/
 │       └── MANIFEST.MF                       # JAR manifest
 ├── target/                                   # Build outputs (generated)
 │   ├── build/                                # Compiled classes
+│   ├── config/                               # Configuration files
+│   │   ├── roll_cost.txt                     # Roll cost configuration
+│   │   ├── tier_modifiers.txt                # Tier modifier multipliers
+│   │   ├── optimal_range_modifier.txt        # Optimal range modifier
+│   │   └── miner_type_modifiers.txt          # Miner type modifiers
 │   └── *.jar                                 # JAR files
 ├── LICENSE
 └── README.md
@@ -95,7 +105,7 @@ It will automatically:
 
 **Using the Application:**
 
-1. Select the miner type (ORE or Modulated) using the radio buttons
+1. Select the miner type (ORE, Modulated, or Ice) using the radio buttons
 
 2. Copy item stats from EVE Online:
    - In EVE Online, open the item info window
@@ -106,7 +116,18 @@ It will automatically:
    - Roll analysis with mutation percentages
    - Performance metrics (Base, Effective, Real-World m³/s)
    - Tier assignment with color coding
+   - Recommended sell price (if roll cost is configured)
    - Tier info is automatically copied to clipboard (e.g., "S: (+5.2%) [ORE]")
+
+**Settings Menu:**
+- **Roll Cost** - Set the cost per roll to enable sell price calculations
+- **Tier Modifiers** - Configure tier modifier multipliers and optimal range modifier for price calculations
+
+**Theme Menu:**
+- **Toggle Theme** - Switch between light and dark themes
+- **Auto (Follow System)** - Automatically follow system theme (default)
+- **Light** - Force light theme
+- **Dark** - Force dark theme
 
 ## Tier Ranges
 
@@ -128,15 +149,36 @@ It will automatically:
 - **E**: 2.67 - 2.92940 m³/s
 - **F**: < 2.67 m³/s
 
+### ORE Ice Harvester
+- **S**: 7.033 - 7.44+ m³/s
+- **A**: 6.627 - 7.033 m³/s
+- **B**: 6.220 - 6.627 m³/s
+- **C**: 5.813 - 6.220 m³/s
+- **D**: 5.407 - 5.813 m³/s
+- **E**: 5.000 - 5.407 m³/s
+- **F**: < 5.000 m³/s
+
 ## System Requirements
 
 - Windows 10/11, macOS, or Linux
 - Java 8 or higher (JDK recommended)
 - No additional libraries required
 
+## Configuration
+
+Configuration files are stored in the `target/config/` directory (created automatically):
+- `roll_cost.txt` - Cost per roll (used for sell price calculations)
+- `tier_modifiers.txt` - Tier modifier multipliers (S, A, B, C, D, E, F)
+- `optimal_range_modifier.txt` - Optimal range modifier (applies when tier has '+')
+- `miner_type_modifiers.txt` - Miner type-specific modifiers
+
+You can edit these files directly or use the Settings menu in the application.
+
 ## Notes
 
 - The application calculates real-world values assuming max skills, Rorqual boosts, and Mining Laser Upgrade II modules
 - Tier assignment is based on **base m³/s** (not effective m³/s)
 - The application runs in the background and monitors clipboard changes every 300ms
+- Sell price calculations use tier modifiers and roll cost (configure via Settings menu)
+- Configuration files are stored relative to the JAR file location
 

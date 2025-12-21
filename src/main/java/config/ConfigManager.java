@@ -15,6 +15,7 @@ public class ConfigManager {
     private static final String CONFIG_DIR_NAME = "config";
     private static final String ROLL_COST_FILE = "roll_cost.txt";
     private static final String TIER_MODIFIERS_FILE = "tier_modifiers.txt";
+    private static final String OPTIMAL_RANGE_MODIFIER_FILE = "optimal_range_modifier.txt";
 
     /**
      * Converts a URL location to a File, handling URISyntaxException
@@ -146,6 +147,14 @@ public class ConfigManager {
     public static File getTierModifiersFile() {
         File configDir = getConfigDirectory();
         return new File(configDir, TIER_MODIFIERS_FILE);
+    }
+
+    /**
+     * Gets the optimal range modifier file path
+     */
+    public static File getOptimalRangeModifiersFile() {
+        File configDir = getConfigDirectory();
+        return new File(configDir, OPTIMAL_RANGE_MODIFIER_FILE);
     }
 }
 
