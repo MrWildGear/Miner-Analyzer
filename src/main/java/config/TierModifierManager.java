@@ -8,6 +8,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import util.ErrorLogger;
 
 /**
  * Manages tier modifiers for sell price calculation
@@ -40,6 +41,11 @@ public class TierModifierManager {
         File modifiersFile = ConfigManager.getTierModifiersFile();
         Map<String, Double> modifiers = new HashMap<>(DEFAULT_MODIFIERS);
 
+        if (modifiersFile == null) {
+            // Path validation failed, return defaults
+            return modifiers;
+        }
+
         if (!modifiersFile.exists()) {
             // Create default file
             saveTierModifiers(modifiers);
@@ -60,7 +66,10 @@ public class TierModifierManager {
                     parseAndAddModifier(tier, parts[1], modifiers);
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            ErrorLogger.logError(
+                    "Error loading tier modifiers from file: " + modifiersFile.getAbsolutePath(),
+                    e);
             // Return defaults on error
         }
 
@@ -77,7 +86,8 @@ public class TierModifierManager {
             if (DEFAULT_MODIFIERS.containsKey(tier)) {
                 modifiers.put(tier, value);
             }
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException e) {
+            ErrorLogger.logError("Invalid tier modifier format for tier: " + tier, e);
             // Skip invalid lines
         }
     }
@@ -88,6 +98,13 @@ public class TierModifierManager {
     public static void saveTierModifiers(Map<String, Double> modifiers) {
         File modifiersFile = ConfigManager.getTierModifiersFile();
 
+        if (modifiersFile == null) {
+            // Path validation failed, cannot save
+            ErrorLogger.logError("Cannot save tier modifiers: path validation failed",
+                    new SecurityException("Path validation failed"));
+            return;
+        }
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(modifiersFile))) {
             // Write in tier order: S, A, B, C, D, E, F
             String[] tierOrder = {"S", "A", "B", "C", "D", "E", "F"};
@@ -96,8 +113,10 @@ public class TierModifierManager {
                 writer.write(tier + "=" + value);
                 writer.newLine();
             }
-        } catch (IOException ignored) {
-            // Silently fail
+        } catch (IOException e) {
+            ErrorLogger.logError(
+                    "Error saving tier modifiers to file: " + modifiersFile.getAbsolutePath(), e);
+            // Config saving failure is logged but not critical
         }
     }
 

@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import util.ErrorLogger;
 
 /**
  * Manages configuration file I/O operations
@@ -25,6 +26,81 @@ public class ConfigManager {
     }
 
     /**
+     * Validates a filename to prevent path traversal attacks
+     * 
+     * @param filename The filename to validate
+     * @return true if the filename is safe, false otherwise
+     */
+    private static boolean isValidFilename(String filename) {
+        if (filename == null || filename.isEmpty()) {
+            return false;
+        }
+
+        // Check for path traversal sequences
+        if (filename.contains("..") || filename.contains("/") || filename.contains("\\")) {
+            return false;
+        }
+
+        // Check for null bytes (potential injection)
+        if (filename.contains("\0")) {
+            return false;
+        }
+
+        // Check for Windows reserved characters
+        String reservedChars = "<>:\"|?*";
+        for (char c : reservedChars.toCharArray()) {
+            if (filename.indexOf(c) >= 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Safely resolves a file path within the config directory, preventing path traversal
+     * 
+     * @param configDir The base config directory
+     * @param filename The filename to resolve
+     * @return A validated File object within the config directory, or null if validation fails
+     */
+    private static File resolveConfigFile(File configDir, String filename) {
+        // Validate filename
+        if (!isValidFilename(filename)) {
+            ErrorLogger.logError(
+                    "Invalid filename detected (potential path traversal): " + filename,
+                    new SecurityException("Path traversal attempt blocked"));
+            return null;
+        }
+
+        try {
+            File file = new File(configDir, filename);
+
+            // Normalize the path to resolve any remaining issues
+            File canonicalFile = file.getCanonicalFile();
+            File canonicalConfigDir = configDir.getCanonicalFile();
+
+            // Ensure the resolved file is within the config directory
+            String canonicalFilePath = canonicalFile.getPath();
+            String canonicalConfigPath = canonicalConfigDir.getPath();
+
+            // Check if the file path starts with the config directory path
+            if (!canonicalFilePath.startsWith(canonicalConfigPath + File.separator)
+                    && !canonicalFilePath.equals(canonicalConfigPath)) {
+                ErrorLogger.logError(
+                        "Path traversal detected: resolved path outside config directory",
+                        new SecurityException("Path traversal attempt blocked"));
+                return null;
+            }
+
+            return canonicalFile;
+        } catch (IOException e) {
+            ErrorLogger.logError("Error resolving config file path: " + filename, e);
+            return null;
+        }
+    }
+
+    /**
      * Converts a URL location to a File, handling URISyntaxException
      * 
      * @param location The URL location to convert
@@ -33,7 +109,8 @@ public class ConfigManager {
     private static File urlToFile(java.net.URL location) {
         try {
             return new File(location.toURI());
-        } catch (java.net.URISyntaxException ignored) {
+        } catch (java.net.URISyntaxException e) {
+            ErrorLogger.logError("Failed to convert URL to URI for config directory", e);
             // If URI conversion fails, try getting path directly
             String path = location.getPath();
             // Handle Windows paths: remove leading / if present (e.g., /C:/path -> C:/path)
@@ -85,7 +162,8 @@ public class ConfigManager {
             if (baseDir != null && baseDir.exists()) {
                 return ensureConfigDirectoryExists(baseDir, CONFIG_DIR_NAME);
             }
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            ErrorLogger.logError("Error getting config directory from JAR location", e);
             // Fallback to current directory
         }
         return null;
@@ -111,7 +189,13 @@ public class ConfigManager {
      */
     public static double getRollCost() {
         File configDir = getConfigDirectory();
-        File costFile = new File(configDir, ROLL_COST_FILE);
+        File costFile = resolveConfigFile(configDir, ROLL_COST_FILE);
+
+        if (costFile == null) {
+            ErrorLogger.logError("Failed to resolve roll cost file path due to validation failure",
+                    new SecurityException("Path validation failed"));
+            return 0.0;
+        }
 
         if (!costFile.exists()) {
             // Create default file with 0
@@ -125,7 +209,9 @@ public class ConfigManager {
                 line = line.trim();
                 return Double.parseDouble(line);
             }
-        } catch (IOException | NumberFormatException ignored) {
+        } catch (IOException | NumberFormatException e) {
+            ErrorLogger.logError(
+                    "Error reading roll cost from config file: " + costFile.getAbsolutePath(), e);
             // Return default value on error
         }
 
@@ -139,29 +225,57 @@ public class ConfigManager {
      */
     public static void saveRollCost(double cost) {
         File configDir = getConfigDirectory();
-        File costFile = new File(configDir, ROLL_COST_FILE);
+        File costFile = resolveConfigFile(configDir, ROLL_COST_FILE);
+
+        if (costFile == null) {
+            ErrorLogger.logError("Failed to resolve roll cost file path due to validation failure",
+                    new SecurityException("Path validation failed"));
+            return;
+        }
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(costFile))) {
             writer.write(String.valueOf(cost));
-        } catch (IOException ignored) {
-            // Silently fail - config saving is not critical
+        } catch (IOException e) {
+            ErrorLogger.logError(
+                    "Error saving roll cost to config file: " + costFile.getAbsolutePath(), e);
+            // Config saving failure is logged but not critical
         }
     }
 
     /**
      * Gets the tier modifiers file path
+     * 
+     * @return The tier modifiers file, or null if path validation fails
      */
     public static File getTierModifiersFile() {
         File configDir = getConfigDirectory();
-        return new File(configDir, TIER_MODIFIERS_FILE);
+        File file = resolveConfigFile(configDir, TIER_MODIFIERS_FILE);
+
+        if (file == null) {
+            ErrorLogger.logError(
+                    "Failed to resolve tier modifiers file path due to validation failure",
+                    new SecurityException("Path validation failed"));
+        }
+
+        return file;
     }
 
     /**
      * Gets the optimal range modifier file path
+     * 
+     * @return The optimal range modifier file, or null if path validation fails
      */
     public static File getOptimalRangeModifiersFile() {
         File configDir = getConfigDirectory();
-        return new File(configDir, OPTIMAL_RANGE_MODIFIER_FILE);
+        File file = resolveConfigFile(configDir, OPTIMAL_RANGE_MODIFIER_FILE);
+
+        if (file == null) {
+            ErrorLogger.logError(
+                    "Failed to resolve optimal range modifier file path due to validation failure",
+                    new SecurityException("Path validation failed"));
+        }
+
+        return file;
     }
 }
 

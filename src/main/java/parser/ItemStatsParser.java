@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import util.ErrorLogger;
 
 /**
  * Parser for extracting item stats from clipboard text
@@ -32,6 +33,12 @@ public class ItemStatsParser {
     
     // Pattern for validating that a value starts with a digit
     private static final String PATTERN_STARTS_WITH_DIGIT = "^\\d.*";
+    
+    // Percentage conversion constant
+    private static final double PERCENTAGE_DIVISOR = 100.0; // Convert percentage to decimal (e.g., 50% -> 0.50)
+    
+    // Time conversion constants
+    private static final int SECONDS_PER_MINUTE = 60; // Convert minutes to seconds
 
     /**
      * Parses item stats from clipboard text
@@ -141,8 +148,9 @@ public class ItemStatsParser {
                 double statValue = getStatValue(statName, numValue);
                 stats.put(statName, statValue);
             }
-        } catch (NumberFormatException ignored) {
-            // Skip lines that can't be parsed - this is normal
+        } catch (NumberFormatException e) {
+            ErrorLogger.logError("Error parsing stat line (NumberFormatException)", e);
+            // Skip lines that can't be parsed - this is normal, but log for debugging
         }
     }
 
@@ -159,8 +167,9 @@ public class ItemStatsParser {
             try {
                 int minutes = Integer.parseInt(timeMatcher.group(1));
                 int seconds = Integer.parseInt(timeMatcher.group(2));
-                return (double) (minutes * 60 + seconds);
-            } catch (NumberFormatException ignored) {
+                return (double) (minutes * SECONDS_PER_MINUTE + seconds);
+            } catch (NumberFormatException e) {
+                ErrorLogger.logError("Error parsing time format: " + timeStr, e);
                 return null;
             }
         }
@@ -171,8 +180,9 @@ public class ItemStatsParser {
             try {
                 int minutes = Integer.parseInt(compactMatcher.group(1));
                 int seconds = Integer.parseInt(compactMatcher.group(2));
-                return (double) (minutes * 60 + seconds);
-            } catch (NumberFormatException ignored) {
+                return (double) (minutes * SECONDS_PER_MINUTE + seconds);
+            } catch (NumberFormatException e) {
+                ErrorLogger.logError("Error parsing compact time format: " + timeStr, e);
                 return null;
             }
         }
@@ -224,7 +234,7 @@ public class ItemStatsParser {
     private static double getStatValue(String statName, double numValue) {
         if ("CriticalSuccessChance".equals(statName) || "CriticalSuccessBonusYield".equals(statName)
                 || "ResidueProbability".equals(statName)) {
-            return numValue / 100.0;
+            return numValue / PERCENTAGE_DIVISOR;
         }
         return numValue;
     }

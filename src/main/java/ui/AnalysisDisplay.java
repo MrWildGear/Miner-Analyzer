@@ -13,6 +13,7 @@ import config.MinerConfig;
 import config.OptimalRangeModifierManager;
 import config.TierModifierManager;
 import model.AnalysisResult;
+import util.ErrorLogger;
 
 /**
  * Handles display and formatting of analysis results
@@ -49,11 +50,31 @@ public class AnalysisDisplay {
     private static final String FORMAT_COLUMN_WIDTH = "%-20s";
     private static final String FORMAT_COLUMN_WIDTH_NEWLINE = "%-20s%n";
 
+    // Percentage calculation constants
+    private static final double PERCENTAGE_MULTIPLIER = 100.0; // Convert decimal to percentage
+                                                               // (e.g., 0.05 -> 5%)
+    private static final double PERCENTAGE_THRESHOLD = 0.1; // Threshold for showing colored
+                                                            // percentage (0.1%)
+    private static final double PERCENTAGE_DIVISOR = 100.0; // Convert percentage to multiplier
+                                                            // (e.g., 5% -> 1.05)
+    private static final double DEFAULT_MULTIPLIER = 1.0; // Default multiplier value
+
     private final StyledDocument doc;
     private Color fgColor;
     private final Map<String, Color> tierColors;
     private final java.util.function.Consumer<Double> sellPriceUpdater;
 
+    // Style cache for frequently accessed styles to improve performance
+    private final Map<String, Style> styleCache = new java.util.HashMap<>();
+
+    /**
+     * Constructs an AnalysisDisplay with the given document, colors, and sell price updater.
+     * 
+     * @param doc The styled document to display analysis results in
+     * @param fgColor The default foreground (text) color
+     * @param tierColors A map of tier letters (S, A, B, C, D, E, F) to their display colors
+     * @param sellPriceUpdater A consumer function to update the sell price display
+     */
     public AnalysisDisplay(StyledDocument doc, Color fgColor, Map<String, Color> tierColors,
             java.util.function.Consumer<Double> sellPriceUpdater) {
         this.doc = doc;
@@ -63,10 +84,18 @@ public class AnalysisDisplay {
         setupTextStyles();
     }
 
+    /**
+     * Updates the theme colors and refreshes the display styles.
+     * 
+     * @param fgColor The new foreground (text) color
+     * @param tierColors A map of tier letters to their new display colors
+     */
     public void updateTheme(Color fgColor, Map<String, Color> tierColors) {
         this.fgColor = fgColor;
         this.tierColors.clear();
         this.tierColors.putAll(tierColors);
+        // Clear style cache when theme changes
+        styleCache.clear();
         setupTextStyles();
         // Update existing text colors in the document
         updateExistingTextColors();
@@ -98,8 +127,8 @@ public class AnalysisDisplay {
             if (logicalStyle != null) {
                 StyleConstants.setForeground(logicalStyle, fgColor);
             }
-        } catch (Exception ignored) {
-            // Ignore errors during text color update
+        } catch (Exception e) {
+            ErrorLogger.logError("Error updating existing text colors", e);
         }
     }
 
@@ -118,8 +147,8 @@ public class AnalysisDisplay {
             setupTierStyles();
             setupGoodBadStyles();
             setupHeaderStyle();
-        } catch (Exception ignored) {
-            // Silently handle style errors - don't break the app
+        } catch (Exception e) {
+            ErrorLogger.logError("Error setting up text styles", e);
         }
     }
 
@@ -132,8 +161,8 @@ public class AnalysisDisplay {
             if (defaultStyle != null) {
                 StyleConstants.setForeground(defaultStyle, fgColor);
             }
-        } catch (Exception ignored) {
-            // Ignore default style setup errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error setting up default style", e);
         }
     }
 
@@ -190,13 +219,31 @@ public class AnalysisDisplay {
         if (doc == null || styleName == null) {
             return null;
         }
-        Style style = doc.getStyle(styleName);
+        // Check cache first for performance
+        Style style = styleCache.get(styleName);
+        if (style != null) {
+            return style;
+        }
+        // If not in cache, get or create from document
+        style = doc.getStyle(styleName);
         if (style == null) {
             style = doc.addStyle(styleName, null);
+        }
+        // Cache the style for future access
+        if (style != null) {
+            styleCache.put(styleName, style);
         }
         return style;
     }
 
+    /**
+     * Displays the analysis results in the document. Formats and shows roll analysis, performance
+     * metrics, and tier information. Also calculates and updates the sell price.
+     * 
+     * @param analysis The analysis result to display
+     * @param baseStats The base stats for the miner type for comparison
+     * @param minerType The miner type ("ORE", "Modulated", or "Ice")
+     */
     public void displayAnalysis(AnalysisResult analysis, Map<String, Double> baseStats,
             String minerType) {
         try {
@@ -207,7 +254,7 @@ public class AnalysisDisplay {
             doc.remove(0, doc.getLength());
 
             Map<String, Double> stats = analysis.getStats();
-            if (stats == null) {
+            if (stats == null || stats.isEmpty()) {
                 return;
             }
 
@@ -215,7 +262,11 @@ public class AnalysisDisplay {
             displayRollAnalysisSection(stats, baseStats, minerType);
             double baseM3Pct = displayPerformanceMetricsSection(analysis, baseStats, minerType);
             displayTierSection(analysis, minerType);
-            copyToClipboard(analysis.getTier(), minerType, baseM3Pct);
+
+            String tier = analysis.getTier();
+            if (tier != null) {
+                copyToClipboard(tier, minerType, baseM3Pct);
+            }
 
             // Calculate and display sell price
             if (sellPriceUpdater != null) {
@@ -223,7 +274,7 @@ public class AnalysisDisplay {
             }
 
         } catch (BadLocationException e) {
-            e.printStackTrace();
+            ErrorLogger.logError("Error displaying analysis results", e);
         }
     }
 
@@ -237,6 +288,10 @@ public class AnalysisDisplay {
 
     private void displayRollAnalysisSection(Map<String, Double> stats,
             Map<String, Double> baseStats, String minerType) {
+        if (stats == null || baseStats == null) {
+            return;
+        }
+
         appendStyledText("Roll Analysis:\n", STYLE_HEADER);
         appendText(String.format(FORMAT_HEADER_ROW, "Metric", "Base", "Rolled", "% Change"),
                 fgColor);
@@ -297,11 +352,13 @@ public class AnalysisDisplay {
         appendText(String.format(FORMAT_LABEL_COLUMN, label), fgColor);
 
         // Format base value as percentage - pad to exactly 20 characters to match header
-        String baseFormatted = String.format(format, (base != null ? base : 0.0) * 100);
+        String baseFormatted =
+                String.format(format, (base != null ? base : 0.0) * PERCENTAGE_MULTIPLIER);
         appendText(String.format(FORMAT_COLUMN_WIDTH, baseFormatted), fgColor);
 
         // Format rolled value as percentage - pad to exactly 20 characters to match header
-        String rolledFormatted = String.format(format, (rolled != null ? rolled : 0.0) * 100);
+        String rolledFormatted =
+                String.format(format, (rolled != null ? rolled : 0.0) * PERCENTAGE_MULTIPLIER);
         if (tag != null) {
             appendStyledText(String.format(FORMAT_COLUMN_WIDTH, rolledFormatted), tag);
         } else {
@@ -319,13 +376,17 @@ public class AnalysisDisplay {
 
     private double calculatePercentageChange(Double rolled, Double base) {
         if (rolled != null && base != null && base > 0) {
-            return ((rolled / base) - 1) * 100;
+            return ((rolled / base) - 1) * PERCENTAGE_MULTIPLIER;
         }
         return 0.0;
     }
 
     private double displayPerformanceMetricsSection(AnalysisResult analysis,
             Map<String, Double> baseStats, String minerType) {
+        if (analysis == null || baseStats == null) {
+            return 0.0;
+        }
+
         appendStyledText("Performance Metrics:\n", STYLE_HEADER);
         appendText(String.format(FORMAT_HEADER_ROW, "Metric", "Base", "Rolled", "% Change"),
                 fgColor);
@@ -377,7 +438,7 @@ public class AnalysisDisplay {
 
     private double displayPerformanceMetricRow(String label, double rolled, double realWorldRolled,
             double base, double realWorldBase) {
-        double pct = base > 0 ? ((rolled / base) - 1) * 100 : 0;
+        double pct = base > 0 ? ((rolled / base) - 1) * PERCENTAGE_MULTIPLIER : 0;
         String tag = getColorTag(pct);
         appendText(String.format(FORMAT_LABEL_COLUMN, label), fgColor);
         appendText(String.format(FORMAT_PERFORMANCE_VALUE, base, realWorldBase, ""), fgColor);
@@ -400,6 +461,16 @@ public class AnalysisDisplay {
 
     private void displayBasePlusCritsRow(AnalysisResult analysis, Map<String, Double> baseStats,
             Double baseMiningAmt, Double baseActTime) {
+        if (analysis == null || baseStats == null || baseMiningAmt == null || baseActTime == null) {
+            return;
+        }
+
+        Double basePlusCritsM3PerSec = analysis.getBasePlusCritsM3PerSec();
+        Double realWorldBasePlusCritsM3PerSec = analysis.getRealWorldBasePlusCritsM3PerSec();
+        if (basePlusCritsM3PerSec == null || realWorldBasePlusCritsM3PerSec == null) {
+            return;
+        }
+
         double baseBasePlusCrits = MiningCalculator.calculateBasePlusCritsM3PerSec(baseMiningAmt,
                 baseActTime, baseStats.getOrDefault(KEY_CRITICAL_SUCCESS_CHANCE, 0.0),
                 baseStats.getOrDefault(KEY_CRITICAL_SUCCESS_BONUS_YIELD, 0.0));
@@ -408,17 +479,21 @@ public class AnalysisDisplay {
                         baseStats.getOrDefault(KEY_CRITICAL_SUCCESS_CHANCE, 0.0),
                         baseStats.getOrDefault(KEY_CRITICAL_SUCCESS_BONUS_YIELD, 0.0), 0.0, 0.0);
         double basePlusCritsPct = baseBasePlusCrits > 0
-                ? ((analysis.getBasePlusCritsM3PerSec() / baseBasePlusCrits) - 1) * 100
+                ? ((basePlusCritsM3PerSec / baseBasePlusCrits) - 1) * PERCENTAGE_MULTIPLIER
                 : 0;
         String tag = getColorTag(basePlusCritsPct);
         appendText(String.format(FORMAT_LABEL_COLUMN, "Base + Crits M3/s"), fgColor);
         appendText(String.format(FORMAT_PERFORMANCE_VALUE, baseBasePlusCrits,
                 baseRealWorldBasePlusCrits, ""), fgColor);
-        displayPerformanceValue(analysis.getBasePlusCritsM3PerSec(),
-                analysis.getRealWorldBasePlusCritsM3PerSec(), basePlusCritsPct, tag);
+        displayPerformanceValue(basePlusCritsM3PerSec, realWorldBasePlusCritsM3PerSec,
+                basePlusCritsPct, tag);
     }
 
     private void displayTierSection(AnalysisResult analysis, String minerType) {
+        if (analysis == null) {
+            return;
+        }
+
         String tier = analysis.getTier() != null ? analysis.getTier() : TIER_F;
         // Strip "+" suffix for tier range lookup
         String tierForLookup = tier.endsWith("+") ? tier.substring(0, tier.length() - 1) : tier;
@@ -483,8 +558,8 @@ public class AnalysisDisplay {
             java.awt.datatransfer.Clipboard clipboard =
                     Toolkit.getDefaultToolkit().getSystemClipboard();
             clipboard.setContents(selection, null);
-        } catch (Exception ignored) {
-            // Ignore clipboard errors
+        } catch (Exception e) {
+            ErrorLogger.logError("Error copying tier to clipboard", e);
         }
     }
 
@@ -503,6 +578,12 @@ public class AnalysisDisplay {
         }
     }
 
+    /**
+     * Appends text to the document with the specified color.
+     * 
+     * @param text The text to append
+     * @param color The color to use for the text (uses default foreground color if null or invalid)
+     */
     public void appendText(String text, Color color) {
         if (text == null || text.isEmpty()) {
             return;
@@ -526,28 +607,31 @@ public class AnalysisDisplay {
 
             doc.insertString(doc.getLength(), text, attr);
         } catch (BadLocationException e) {
-            e.printStackTrace();
+            ErrorLogger.logError("Error appending text to document (BadLocationException)", e);
         } catch (Exception e) {
-            e.printStackTrace();
+            ErrorLogger.logError("Error appending text to document", e);
             // Last resort fallback - insert with no attributes and hope component's foreground
             // works
             try {
                 doc.insertString(doc.getLength(), text, null);
             } catch (BadLocationException ex) {
-                ex.printStackTrace();
+                ErrorLogger.logError("Error in fallback text append", ex);
             }
         }
     }
 
     private void appendStyledText(String text, String styleName) {
         try {
-            Style style = doc.getStyle(styleName);
-            if (style == null) {
-                style = doc.addStyle(styleName, null);
+            // Use cached style lookup for better performance
+            Style style = getOrCreateStyle(styleName);
+            if (style != null) {
+                doc.insertString(doc.getLength(), text, style);
+            } else {
+                // Fallback: insert without style if style creation failed
+                doc.insertString(doc.getLength(), text, null);
             }
-            doc.insertString(doc.getLength(), text, style);
         } catch (BadLocationException e) {
-            e.printStackTrace();
+            ErrorLogger.logError("Error appending styled text to document", e);
         }
     }
 
@@ -561,13 +645,13 @@ public class AnalysisDisplay {
 
     private String formatPercentage(double value) {
         // Format percentage - will be padded to 20 chars in the calling method
-        if (value > 0.1) {
+        if (value > PERCENTAGE_THRESHOLD) {
             if (value < 10.0) {
                 return String.format("+%04.1f%%", value); // e.g., +05.3%
             } else {
                 return String.format("+%.1f%%", value); // e.g., +22.4% or +123.4%
             }
-        } else if (value < -0.1) {
+        } else if (value < -PERCENTAGE_THRESHOLD) {
             double absValue = Math.abs(value);
             if (absValue < 10.0) {
                 return String.format("-%04.1f%%", absValue); // e.g., -04.1%
@@ -593,6 +677,10 @@ public class AnalysisDisplay {
      * optimal_range_modifier (if tier has "+")
      */
     private double calculateSellPrice(AnalysisResult analysis, double baseM3Pct) {
+        if (analysis == null) {
+            return 0.0;
+        }
+
         double cost = ConfigManager.getRollCost();
         if (cost <= 0) {
             return 0.0;
@@ -604,7 +692,7 @@ public class AnalysisDisplay {
         double tierModifier = TierModifierManager.getModifierForTier(tierForModifier);
 
         // Check if tier has "+" suffix (optimal range increased) and apply modifier
-        double optimalRangeModifier = 1.0;
+        double optimalRangeModifier = DEFAULT_MULTIPLIER;
         if (tier.endsWith("+")) {
             optimalRangeModifier = OptimalRangeModifierManager.loadOptimalRangeModifier();
         }
@@ -612,7 +700,7 @@ public class AnalysisDisplay {
         // Formula: cost * tier_modifier * (100% + baseM3Pct%) * optimal_range_modifier (if
         // applicable)
         // baseM3Pct is already a percentage, so convert to multiplier: 1 + (baseM3Pct / 100)
-        double m3Multiplier = 1.0 + (baseM3Pct / 100.0);
+        double m3Multiplier = DEFAULT_MULTIPLIER + (baseM3Pct / PERCENTAGE_DIVISOR);
         return cost * tierModifier * m3Multiplier * optimalRangeModifier;
     }
 }

@@ -7,6 +7,10 @@ import config.MinerConfig;
  */
 public class MiningCalculator {
 
+    // Skill bonus calculation constants
+    private static final int MAX_SKILL_LEVEL = 5; // Maximum skill level (level 5)
+    private static final double SKILL_BONUS_PER_LEVEL = 0.05; // 5% bonus per skill level
+
     /**
      * Private constructor to prevent instantiation of utility class
      */
@@ -18,9 +22,10 @@ public class MiningCalculator {
      * Calculates skill bonus multiplier Assumes level 5 in Mining, Astrogeology, and Exhumers
      */
     public static double getSkillBonus() {
-        double miningBonus = 1 + (5 * 0.05); // 1.25x
-        double astroBonus = 1 + (5 * 0.05); // 1.25x
-        double exhumerBonus = 1 + (5 * 0.05); // 1.25x
+        double skillMultiplier = 1 + (MAX_SKILL_LEVEL * SKILL_BONUS_PER_LEVEL); // 1.25x per skill
+        double miningBonus = skillMultiplier;
+        double astroBonus = skillMultiplier;
+        double exhumerBonus = skillMultiplier;
         return miningBonus * astroBonus * exhumerBonus;
     }
 

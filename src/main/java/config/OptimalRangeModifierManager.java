@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import util.ErrorLogger;
 
 /**
  * Manages optimal range modifier for sell price calculation Applies when tier has "+" suffix
@@ -19,7 +20,7 @@ public class OptimalRangeModifierManager {
      * Private constructor to prevent instantiation of utility class
      */
     private OptimalRangeModifierManager() {
-        throw new AssertionError("Utility class cannot be instantiated");
+        throw new UnsupportedOperationException("Utility class cannot be instantiated");
     }
 
     /**
@@ -42,7 +43,8 @@ public class OptimalRangeModifierManager {
                 value = 0.0; // Don't allow negative modifiers
             }
             return value;
-        } catch (NumberFormatException ignored) {
+        } catch (NumberFormatException e) {
+            ErrorLogger.logError("Invalid optimal range modifier format: " + line, e);
             // Return null on parse error
             return null;
         }
@@ -53,6 +55,11 @@ public class OptimalRangeModifierManager {
      */
     public static double loadOptimalRangeModifier() {
         File modifiersFile = getModifiersFile();
+
+        if (modifiersFile == null) {
+            // Path validation failed, return default
+            return DEFAULT_MODIFIER;
+        }
 
         if (!modifiersFile.exists()) {
             // Create default file
@@ -71,7 +78,9 @@ public class OptimalRangeModifierManager {
                     }
                 }
             }
-        } catch (IOException ignored) {
+        } catch (IOException e) {
+            ErrorLogger.logError("Error loading optimal range modifier from file: "
+                    + modifiersFile.getAbsolutePath(), e);
             // Return default on error
         }
 
@@ -84,10 +93,19 @@ public class OptimalRangeModifierManager {
     public static void saveOptimalRangeModifier(double modifier) {
         File modifiersFile = getModifiersFile();
 
+        if (modifiersFile == null) {
+            // Path validation failed, cannot save
+            ErrorLogger.logError("Cannot save optimal range modifier: path validation failed",
+                    new SecurityException("Path validation failed"));
+            return;
+        }
+
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(modifiersFile))) {
             writer.write(String.valueOf(modifier));
-        } catch (IOException ignored) {
-            // Silently fail
+        } catch (IOException e) {
+            ErrorLogger.logError("Error saving optimal range modifier to file: "
+                    + modifiersFile.getAbsolutePath(), e);
+            // Config saving failure is logged but not critical
         }
     }
 
