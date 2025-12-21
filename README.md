@@ -31,39 +31,38 @@ Rolled Mods/
 │   └── main/
 │       └── java/
 │           ├── app/
-│           │   └── EveMinerAnalyzer.java    # Main application class
+│           │   └── EveMinerAnalyzer.java              # Main application class
 │           ├── analyzer/
-│           │   └── RollAnalyzer.java         # Roll analysis logic
+│           │   └── RollAnalyzer.java                  # Roll analysis logic
 │           ├── calculator/
-│           │   └── MiningCalculator.java     # Mining calculations
+│           │   └── MiningCalculator.java              # Mining calculations
 │           ├── config/
-│           │   ├── ConfigManager.java         # Configuration file management
-│           │   ├── MinerConfig.java           # Configuration and tier ranges
-│           │   ├── OptimalRangeModifierManager.java  # Optimal range modifier management
-│           │   └── TierModifierManager.java   # Tier modifier management
+│           │   ├── ConfigManager.java                 # Configuration file management
+│           │   ├── MinerConfig.java                   # Configuration and tier ranges
+│           │   ├── OptimalRangeModifierManager.java   # Optimal range modifier management
+│           │   └── TierModifierManager.java           # Tier modifier management
 │           ├── model/
-│           │   └── AnalysisResult.java       # Data model
+│           │   └── AnalysisResult.java                # Data model
 │           ├── parser/
-│           │   └── ItemStatsParser.java      # Clipboard parsing
+│           │   └── ItemStatsParser.java               # Clipboard parsing
 │           ├── service/
-│           │   └── ClipboardMonitor.java    # Clipboard monitoring service
+│           │   └── ClipboardMonitor.java              # Clipboard monitoring service
 │           └── ui/
-│               ├── AnalysisDisplay.java      # UI display logic
-│               └── ThemeManager.java         # Theme management
+│               ├── AnalysisDisplay.java               # UI display logic
+│               └── ThemeManager.java                  # Theme management
 ├── scripts/
-│   ├── EVE Miner Analyzer.bat                # Main launcher (double-click to run)
+│   ├── EVE Miner Analyzer.bat                         # Main launcher (double-click to run)
 │   └── java/
-│       ├── build.bat                         # Build script
-│       ├── create_executable.bat             # Create native .exe
-│       └── MANIFEST.MF                       # JAR manifest
-├── target/                                   # Build outputs (generated)
-│   ├── build/                                # Compiled classes
-│   ├── config/                               # Configuration files
-│   │   ├── roll_cost.txt                     # Roll cost configuration
-│   │   ├── tier_modifiers.txt                # Tier modifier multipliers
-│   │   ├── optimal_range_modifier.txt        # Optimal range modifier
-│   │   └── miner_type_modifiers.txt          # Miner type modifiers
-│   └── *.jar                                 # JAR files
+│       ├── build.bat                                  # Build script
+│       ├── create_executable.bat                      # Create native .exe
+│       └── MANIFEST.MF                                # JAR manifest
+├── target/                                            # Build outputs (generated)
+│   ├── build/                                         # Compiled classes
+│   ├── config/                                        # Configuration files
+│   │   ├── roll_cost.txt                              # Roll cost configuration
+│   │   ├── tier_modifiers.txt                         # Tier modifier multipliers
+│   │   └── optimal_range_modifier.txt                 # Optimal range modifier
+│   └── *.jar                                          # JAR files
 ├── LICENSE
 └── README.md
 ```
@@ -131,32 +130,15 @@ It will automatically:
 
 ## Tier Ranges
 
-### ORE Strip Miner
-- **S**: 6.27 - 6.61+ m³/s
-- **A**: 5.92 - 6.27 m³/s
-- **B**: 5.57 - 5.92 m³/s
-- **C**: 5.23 - 5.57 m³/s
-- **D**: 4.88 - 5.23 m³/s
-- **E**: 4.44 - 4.88 m³/s
-- **F**: < 4.44 m³/s
-
-### Modulated Strip Miner II
-- **S**: 3.76188 - 3.97+ m³/s
-- **A**: 3.55376 - 3.76188 m³/s
-- **B**: 3.34564 - 3.55376 m³/s
-- **C**: 3.13752 - 3.34564 m³/s
-- **D**: 2.92940 - 3.13752 m³/s
-- **E**: 2.67 - 2.92940 m³/s
-- **F**: < 2.67 m³/s
-
-### ORE Ice Harvester
-- **S**: 7.033 - 7.44+ m³/s
-- **A**: 6.627 - 7.033 m³/s
-- **B**: 6.220 - 6.627 m³/s
-- **C**: 5.813 - 6.220 m³/s
-- **D**: 5.407 - 5.813 m³/s
-- **E**: 5.000 - 5.407 m³/s
-- **F**: < 5.000 m³/s
+| Tier | ORE Strip Miner        | Modulated Strip Miner II | ORE Ice Harvester |
+|:-----|:----------------------|:------------------------|:------------------|
+| **S** | 6.27 - 6.61+ m³/s     | 3.76188 - 3.97+ m³/s    | 7.033 - 7.44+ m³/s |
+| **A** | 5.92 - 6.27 m³/s      | 3.55376 - 3.76188 m³/s  | 6.627 - 7.033 m³/s |
+| **B** | 5.57 - 5.92 m³/s      | 3.34564 - 3.55376 m³/s  | 6.220 - 6.627 m³/s |
+| **C** | 5.23 - 5.57 m³/s      | 3.13752 - 3.34564 m³/s  | 5.813 - 6.220 m³/s |
+| **D** | 4.88 - 5.23 m³/s      | 2.92940 - 3.13752 m³/s  | 5.407 - 5.813 m³/s |
+| **E** | 4.44 - 4.88 m³/s      | 2.67 - 2.92940 m³/s     | 5.000 - 5.407 m³/s |
+| **F** | < 4.44 m³/s           | < 2.67 m³/s             | < 5.000 m³/s       |
 
 ## System Requirements
 
