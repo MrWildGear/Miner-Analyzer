@@ -1,0 +1,17 @@
+{
+  "recommendations": [
+    "vscjava.vscode-java-pack",
+    "vscjava.vscode-java-debug",
+    "vscjava.vscode-java-test",
+    "vscjava.vscode-maven",
+    "vscjava.vscode-java-dependency",
+    "redhat.java",
+    "vscjava.vscode-java-compiler",
+    "vscjava.vscode-java-formatter",
+    "SonarSource.sonarlint-vscode",
+    "vscjava.vscode-gradle"
+  ],
+  "unwantedRecommendations": []
+}
+
+

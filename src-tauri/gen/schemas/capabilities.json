@@ -1,0 +1,1 @@
+{"clipboard-access":{"identifier":"clipboard-access","description":"Allows the main window to read from and write to the clipboard","local":true,"windows":["main"],"permissions":["clipboard-manager:allow-read-text","clipboard-manager:allow-write-text"]}}
