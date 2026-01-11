@@ -23,7 +23,7 @@ public class ErrorLogger {
     }
 
     private static final String LOG_FILE = "error.log";
-    private static final long MAX_LOG_SIZE = 10 * 1024 * 1024; // 10 MB
+    private static final long MAX_LOG_SIZE = 10L * 1024L * 1024L; // 10 MB
     private static final int MAX_ROTATED_LOGS = 5; // Keep up to 5 rotated log files
     private static final DateTimeFormatter FORMATTER =
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -47,7 +47,7 @@ public class ErrorLogger {
      * 
      * @return The current minimum log level
      */
-    public static LogLevel getMinimumLogLevel() {
+    public static synchronized LogLevel getMinimumLogLevel() {
         return minimumLogLevel;
     }
 
@@ -76,32 +76,42 @@ public class ErrorLogger {
     }
 
     /**
+     * Shifts existing rotated log files by renaming them with incremented suffixes. Deletes any log
+     * files that exceed MAX_ROTATED_LOGS to prevent accumulation.
+     * 
+     * @throws IOException If an error occurs during file operations
+     */
+    private static void shiftExistingLogs() throws IOException {
+        // Delete the oldest log file if it exists (error.log.5 when MAX_ROTATED_LOGS = 5)
+        Files.deleteIfExists(new File(LOG_FILE + "." + MAX_ROTATED_LOGS).toPath());
+
+        // Rotate existing logs: error.log.4 -> error.log.5, error.log.3 -> error.log.4, etc.
+        for (int i = MAX_ROTATED_LOGS - 1; i >= 1; i--) {
+            File oldLog = new File(LOG_FILE + "." + i);
+            File newLog = new File(LOG_FILE + "." + (i + 1));
+
+            if (!oldLog.exists()) {
+                continue;
+            }
+
+            // Move to next number (REPLACE_EXISTING handles overwriting existing files)
+            Files.move(oldLog.toPath(), newLog.toPath(), StandardCopyOption.REPLACE_EXISTING);
+        }
+    }
+
+    /**
      * Checks if the log file needs rotation and performs it if necessary. Rotates logs by renaming
      * them with numbered suffixes (error.log.1, error.log.2, etc.)
      */
+    @SuppressWarnings("java:S106") // System.err is appropriate here as fallback when logger itself
+                                   // fails
     private static void rotateLogIfNeeded() {
         try {
             File logFile = new File(LOG_FILE);
 
             // Check if file exists and exceeds size limit
             if (logFile.exists() && logFile.length() >= MAX_LOG_SIZE) {
-                // Rotate existing logs: error.log.4 -> error.log.5, error.log.3 -> error.log.4,
-                // etc.
-                for (int i = MAX_ROTATED_LOGS - 1; i >= 1; i--) {
-                    File oldLog = new File(LOG_FILE + "." + i);
-                    File newLog = new File(LOG_FILE + "." + (i + 1));
-
-                    if (oldLog.exists()) {
-                        if (i == MAX_ROTATED_LOGS - 1) {
-                            // Delete the oldest rotated log if we've reached the limit
-                            oldLog.delete();
-                        } else {
-                            // Move to next number
-                            Files.move(oldLog.toPath(), newLog.toPath(),
-                                    StandardCopyOption.REPLACE_EXISTING);
-                        }
-                    }
-                }
+                shiftExistingLogs();
 
                 // Move current log to error.log.1
                 File rotatedLog = new File(LOG_FILE + ".1");
@@ -124,6 +134,8 @@ public class ErrorLogger {
      * @param message The message to log
      * @param throwable The exception associated with the message (can be null)
      */
+    @SuppressWarnings("java:S106") // System.err is appropriate here as fallback when logger itself
+                                   // fails
     private static synchronized void log(LogLevel level, String message, Throwable throwable) {
         if (!shouldLog(level)) {
             return;

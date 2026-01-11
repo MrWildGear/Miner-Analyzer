@@ -8,8 +8,11 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -28,8 +31,10 @@ public class ErrorLogMonitor implements AutoCloseable {
     // Polling interval in milliseconds (check every 5 seconds)
     private static final long POLL_INTERVAL = 5000;
 
-    private volatile Timer monitorTimer;
-    private volatile boolean isRunning = false;
+    private static final Logger logger = Logger.getLogger(ErrorLogMonitor.class.getName());
+
+    private final AtomicReference<Timer> monitorTimer = new AtomicReference<>();
+    private final AtomicBoolean isRunning = new AtomicBoolean(false);
     private int lastLineCount = 0; // Track lines processed instead of byte position
     private long lastFileSize = 0; // Track file size for truncation detection
     private final File logFile;
@@ -80,7 +85,9 @@ public class ErrorLogMonitor implements AutoCloseable {
         if (logFile.exists()) {
             try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
                 int lineCount = 0;
-                while (reader.readLine() != null) {
+                @SuppressWarnings("unused")
+                String line;
+                while ((line = reader.readLine()) != null) {
                     lineCount++;
                 }
                 lastLineCount = lineCount;
@@ -114,14 +121,7 @@ public class ErrorLogMonitor implements AutoCloseable {
                 Matcher matcher = ERROR_PATTERN.matcher(line);
                 if (matcher.find()) {
                     count++;
-                    try {
-                        LocalDateTime timestamp = LocalDateTime.parse(matcher.group(1), FORMATTER);
-                        long timestampMs = timestamp.atZone(java.time.ZoneId.systemDefault())
-                                .toInstant().toEpochMilli();
-                        lastErrorTime.set(Math.max(lastErrorTime.get(), timestampMs));
-                    } catch (Exception e) {
-                        // Ignore parsing errors for timestamps
-                    }
+                    updateLastErrorTime(matcher.group(1));
                 }
             }
             totalErrorCount.set(count);
@@ -131,21 +131,38 @@ public class ErrorLogMonitor implements AutoCloseable {
     }
 
     /**
+     * Updates the last error time from a timestamp string.
+     * 
+     * @param timestampStr The timestamp string to parse
+     */
+    private void updateLastErrorTime(String timestampStr) {
+        try {
+            LocalDateTime timestamp = LocalDateTime.parse(timestampStr, FORMATTER);
+            long timestampMs =
+                    timestamp.atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli();
+            lastErrorTime.set(Math.max(lastErrorTime.get(), timestampMs));
+        } catch (Exception e) {
+            // Ignore parsing errors for timestamps
+        }
+    }
+
+    /**
      * Starts monitoring the error log file. Safe to call multiple times (will restart monitoring if
      * already running).
      */
     public void start() {
         synchronized (this) {
-            if (isRunning) {
+            if (isRunning.get()) {
                 stop();
             }
 
-            isRunning = true;
-            monitorTimer = new Timer(true); // Daemon thread
-            monitorTimer.schedule(new TimerTask() {
+            isRunning.set(true);
+            Timer timer = new Timer(true); // Daemon thread
+            monitorTimer.set(timer);
+            timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    if (isRunning) {
+                    if (isRunning.get()) {
                         checkForNewErrors();
                     }
                 }
@@ -158,11 +175,11 @@ public class ErrorLogMonitor implements AutoCloseable {
      */
     public void stop() {
         synchronized (this) {
-            isRunning = false;
-            if (monitorTimer != null) {
-                monitorTimer.cancel();
-                monitorTimer.purge();
-                monitorTimer = null;
+            isRunning.set(false);
+            Timer timer = monitorTimer.getAndSet(null);
+            if (timer != null) {
+                timer.cancel();
+                timer.purge();
             }
         }
     }
@@ -197,7 +214,8 @@ public class ErrorLogMonitor implements AutoCloseable {
             int linesToSkip = lastLineCount;
             boolean fileWasTruncated = false;
             for (int i = 0; i < linesToSkip; i++) {
-                if (reader.readLine() == null) {
+                String skippedLine = reader.readLine();
+                if (skippedLine == null) {
                     // File has fewer lines than expected (was truncated)
                     fileWasTruncated = true;
                     lastLineCount = 0;
@@ -207,10 +225,8 @@ public class ErrorLogMonitor implements AutoCloseable {
 
             if (fileWasTruncated) {
                 // File was truncated, read entire file from beginning
-                try (BufferedReader newReader = new BufferedReader(new FileReader(logFile))) {
-                    int newLinesProcessed = processNewLines(newReader);
-                    lastLineCount = newLinesProcessed;
-                }
+                int newLinesProcessed = processTruncatedFile();
+                lastLineCount = newLinesProcessed;
             } else {
                 // Process new lines and count them
                 int newLinesProcessed = processNewLines(reader);
@@ -220,6 +236,21 @@ public class ErrorLogMonitor implements AutoCloseable {
         } catch (IOException e) {
             // Don't log monitoring errors to avoid recursion
             // Just silently fail and try again next poll
+        }
+    }
+
+    /**
+     * Processes the entire file from the beginning when it has been truncated.
+     * 
+     * @return Number of lines processed
+     */
+    private int processTruncatedFile() {
+        try (BufferedReader reader = new BufferedReader(new FileReader(logFile))) {
+            return processNewLines(reader);
+        } catch (IOException e) {
+            // Don't log monitoring errors to avoid recursion
+            // Just silently fail and try again next poll
+            return 0;
         }
     }
 
@@ -290,8 +321,9 @@ public class ErrorLogMonitor implements AutoCloseable {
                 errorCallback.onErrorDetected(timestamp, message, sessionCount);
             } catch (Exception e) {
                 // Don't let callback errors break monitoring
-                // Could log to System.err, but avoid recursion with ErrorLogger
-                System.err.println("Error in error callback: " + e.getMessage());
+                // Use standard Java logger to avoid recursion with ErrorLogger (which writes to
+                // error.log)
+                logger.warning("Error in error callback: " + e.getMessage());
             }
         }
     }
@@ -357,7 +389,7 @@ public class ErrorLogMonitor implements AutoCloseable {
      * @return true if monitoring is active
      */
     public boolean isRunning() {
-        return isRunning;
+        return isRunning.get();
     }
 
     @Override
