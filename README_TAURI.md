@@ -1,6 +1,6 @@
-# EVE Online Strip Miner Roll Analyzer
+# EVE Online Strip Miner Roll Analyzer (Tauri Version)
 
-A Tauri + React + TypeScript desktop application that analyzes EVE Online Strip Miner rolls by monitoring your clipboard. Supports ORE Strip Miner, Modulated Strip Miner II, and ORE Ice Harvester.
+This is a recode of the EVE Online Strip Miner Roll Analyzer using Tauri + React + TypeScript.
 
 ## 🚀 Quick Start
 
@@ -10,7 +10,7 @@ A Tauri + React + TypeScript desktop application that analyzes EVE Online Strip 
 - Rust (latest stable version)
 - Tauri CLI: `npm install -g @tauri-apps/cli` or `cargo install tauri-cli`
 
-### Installation
+### Development
 
 1. Install dependencies:
    ```bash
@@ -19,9 +19,7 @@ A Tauri + React + TypeScript desktop application that analyzes EVE Online Strip 
    pnpm install
    ```
 
-2. Add app icons (see `src-tauri/icons/README.md` for details)
-
-3. Run in development mode:
+2. Run in development mode:
    ```bash
    npm run tauri:dev
    # or
@@ -30,14 +28,14 @@ A Tauri + React + TypeScript desktop application that analyzes EVE Online Strip 
 
 ### Build
 
-Build the application:
-```bash
-npm run tauri:build
-# or
-pnpm tauri:build
-```
+1. Build the application:
+   ```bash
+   npm run tauri:build
+   # or
+   pnpm tauri:build
+   ```
 
-The built application will be in `src-tauri/target/release/`
+   The built application will be in `src-tauri/target/release/`
 
 ## Features
 
@@ -71,7 +69,6 @@ Rolled Mods/
 │   ├── src/
 │   │   ├── main.rs
 │   │   └── lib.rs
-│   ├── icons/            # App icon files
 │   └── Cargo.toml
 ├── package.json
 ├── tsconfig.json
@@ -87,35 +84,13 @@ Configuration files are stored in the app data directory:
 
 You can edit these files directly or use the Settings dialog in the application.
 
-## Tier Ranges
+## Differences from Java Version
 
-| Tier | ORE Strip Miner        | Modulated Strip Miner II | ORE Ice Harvester |
-|:-----|:----------------------|:------------------------|:------------------|
-| **S** | 6.27 - 6.61+ m³/s     | 3.76188 - 3.97+ m³/s    | 7.033 - 7.44+ m³/s |
-| **A** | 5.92 - 6.27 m³/s      | 3.55376 - 3.76188 m³/s  | 6.627 - 7.033 m³/s |
-| **B** | 5.57 - 5.92 m³/s      | 3.34564 - 3.55376 m³/s  | 6.220 - 6.627 m³/s |
-| **C** | 5.23 - 5.57 m³/s      | 3.13752 - 3.34564 m³/s  | 5.813 - 6.220 m³/s |
-| **D** | 4.88 - 5.23 m³/s      | 2.92940 - 3.13752 m³/s  | 5.407 - 5.813 m³/s |
-| **E** | 4.44 - 4.88 m³/s      | 2.67 - 2.92940 m³/s     | 5.000 - 5.407 m³/s |
-| **F** | < 4.44 m³/s           | < 2.67 m³/s             | < 5.000 m³/s       |
-
-## Usage
-
-1. Select the miner type (ORE, Modulated, or Ice) using the radio buttons
-2. Copy item stats from EVE Online:
-   - In EVE Online, open the item info window
-   - Press Ctrl+C to copy the stats
-   - The application will automatically analyze the item
-3. The analysis will show:
-   - Roll analysis with mutation percentages
-   - Performance metrics (Base, Effective, Real-World m³/s)
-   - Tier assignment with color coding
-   - Recommended sell price (if roll cost is configured)
-   - Tier info is automatically copied to clipboard (e.g., "S: (+5.2%) [ORE]")
-
-**Settings Dialog:**
-- **Roll Cost** - Set the cost per roll to enable sell price calculations
-- **Tier Modifiers** - Configure tier modifier multipliers and optimal range modifier for price calculations
+- Modern UI built with React and shadcn/ui components
+- Native performance with Tauri (smaller bundle size)
+- Better cross-platform support
+- More maintainable codebase with TypeScript
+- Configuration stored in app data directory (more appropriate for desktop apps)
 
 ## Notes
 
@@ -123,9 +98,3 @@ You can edit these files directly or use the Settings dialog in the application.
 - Tier assignment is based on **base m³/s** (not effective m³/s)
 - The application runs in the background and monitors clipboard changes every 300ms
 - Sell price calculations use tier modifiers and roll cost (configure via Settings dialog)
-
-## System Requirements
-
-- Windows 10/11, macOS, or Linux
-- Node.js 18+ (for development)
-- Rust (for building)
