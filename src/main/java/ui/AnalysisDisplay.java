@@ -269,7 +269,7 @@ public class AnalysisDisplay {
 
             String tier = analysis.getTier();
             if (tier != null) {
-                copyToClipboard(tier, minerType, baseM3Pct);
+                copyToClipboard(tier, minerType, baseM3Pct, stats, baseStats);
             }
 
             // Calculate and display sell price
@@ -554,7 +554,8 @@ public class AnalysisDisplay {
         }
     }
 
-    private void copyToClipboard(String tier, String minerType, double baseM3Pct) {
+    private void copyToClipboard(String tier, String minerType, double baseM3Pct,
+            Map<String, Double> stats, Map<String, Double> baseStats) {
         String tierDisplay;
         if (tier == null) {
             tierDisplay = TIER_F;
@@ -565,6 +566,11 @@ public class AnalysisDisplay {
             // For other tiers, keep the "+" suffix if present
             tierDisplay = tier;
         }
+        
+        // Add space after tier if it doesn't end with "+" (positive range)
+        // Check original tier value, not tierDisplay (since S tier is displayed as +S)
+        String tierSeparator = (tier != null && tier.endsWith("+")) ? ":" : " :";
+        
         String minerLabel;
         if (MINER_TYPE_ORE.equals(minerType)) {
             minerLabel = "[ORE]";
@@ -573,8 +579,19 @@ public class AnalysisDisplay {
         } else {
             minerLabel = "[Modulated]";
         }
-        String clipboardText =
-                tierDisplay + ": (" + formatPercentage(baseM3Pct) + ") " + minerLabel;
+        
+        // Calculate Optimal Range percentage change
+        double optimalRangePct = 0.0;
+        if (stats != null && baseStats != null) {
+            Double rolledOptimalRange = stats.get(KEY_OPTIMAL_RANGE);
+            Double baseOptimalRange = baseStats.get(KEY_OPTIMAL_RANGE);
+            if (rolledOptimalRange != null && baseOptimalRange != null && baseOptimalRange > 0) {
+                optimalRangePct = calculatePercentageChange(rolledOptimalRange, baseOptimalRange);
+            }
+        }
+        
+        String clipboardText = tierDisplay + tierSeparator + " (" + formatPercentage(baseM3Pct)
+                + ") {" + formatPercentage(optimalRangePct) + "} " + minerLabel;
         try {
             java.awt.datatransfer.StringSelection selection =
                     new java.awt.datatransfer.StringSelection(clipboardText);

@@ -47,7 +47,7 @@ import util.ErrorLogger;
  */
 public class EveMinerAnalyzer extends JFrame {
 
-    private static final String VERSION = "1.4.15";
+    private static final String VERSION = "1.4.16";
     private static final String APP_NAME = "EVE Online Strip Miner Roll Analyzer";
     private static final String DEFAULT_STYLE_NAME = "default";
     private static final String TIER_PREFIX = "Tier ";
