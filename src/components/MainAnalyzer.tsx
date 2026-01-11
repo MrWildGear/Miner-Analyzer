@@ -20,6 +20,7 @@ import {
 } from '@/lib/config/configManager';
 import AnalysisDisplay from './AnalysisDisplay';
 import SettingsDialog from './SettingsDialog';
+import TierRangesDialog from './TierRangesDialog';
 import { APP_VERSION } from '@/version';
 
 export default function MainAnalyzer() {
@@ -40,7 +41,9 @@ export default function MainAnalyzer() {
   });
   const [optimalRangeModifier, setOptimalRangeModifier] = useState<number>(1);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
+  const [lastExportText, setLastExportText] = useState<string>('');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     // Initialize from localStorage or default to true (dark mode)
     const saved = localStorage.getItem('theme');
@@ -83,7 +86,10 @@ export default function MainAnalyzer() {
         if (!clipboardText) return;
 
         const hash = `${clipboardText.length}-${clipboardText.slice(0, 50)}`;
-        if (hash === lastClipboardHash) return;
+        // Allow re-processing if clipboard text is different from our last export
+        // This handles the case where user copies the same item again
+        const isDifferentFromExport = clipboardText !== lastExportText;
+        if (hash === lastClipboardHash && !isDifferentFromExport) return;
 
         const parsedStats = parseItemStats(clipboardText);
         if (Object.keys(parsedStats).length === 0) {
@@ -116,23 +122,43 @@ export default function MainAnalyzer() {
           setSellPrice(price);
 
           // Copy tier to clipboard
-          let tierText = `${result.tier}: (+${baseM3Pct.toFixed(1)}%)`;
+          // Format: A : (+34.4%) {-04.1%} [ORE]
+          // Always space after colon, first percentage with sign, second can be +/- 
+          // Add leading zero for values < 10% (absolute) for proper sorting
+          const formatPercentage = (value: number): string => {
+            const absValue = Math.abs(value);
+            if (absValue < 10) {
+              const sign = value >= 0 ? '' : '-';
+              const padded = absValue.toFixed(1).padStart(4, '0'); // "09.4"
+              return sign + padded;
+            }
+            return value.toFixed(1);
+          };
+
+          const baseM3Sign = baseM3Pct >= 0 ? '+' : '';
+          const baseM3Formatted = formatPercentage(baseM3Pct);
+          // Plus tiers have no space: "A+:", regular tiers have space: "A :"
+          const tier = result.tier.trim();
+          const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
+          let tierText = `${tier}${spaceAfterTier}: (${baseM3Sign}${baseM3Formatted}%)`;
           
-          // Add optimal range percentage if optimal range is increased
-          // Use the same logic as rollAnalyzer.ts to check if optimal range is increased
-          const rolledOptimalRange = parsedStats.OptimalRange;
+          // Add optimal range percentage if optimal range exists (shows + or -)
+          const rolledOptimalRange = result.stats.OptimalRange;
           const baseOptimalRange = baseStats.OptimalRange;
           if (
             rolledOptimalRange !== undefined &&
             baseOptimalRange !== undefined &&
-            rolledOptimalRange > baseOptimalRange
+            baseOptimalRange > 0
           ) {
             const optimalRangePct = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
-            tierText += ` {+${optimalRangePct.toFixed(1)}%}`;
+            const sign = optimalRangePct >= 0 ? '+' : '';
+            const optimalRangeFormatted = formatPercentage(optimalRangePct);
+            tierText += ` {${sign}${optimalRangeFormatted}%}`;
           }
           
           tierText += ` [${minerType}]`;
           await writeText(tierText);
+          setLastExportText(tierText);
 
           setStatus('Analysis complete');
         } catch (error) {
@@ -148,7 +174,25 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, rollCost, tierModifiers, optimalRangeModifier]);
+  }, [minerType, lastClipboardHash, lastExportText, rollCost, tierModifiers, optimalRangeModifier]);
+
+  // Recalculate sell price when analysis or pricing settings change
+  useEffect(() => {
+    if (analysis && Object.keys(baseStats).length > 0) {
+      const baseM3 = analysis.m3PerSec;
+      const baseBaseM3 = baseStats.MiningAmount / baseStats.ActivationTime;
+      const baseM3Pct = ((baseM3 - baseBaseM3) / baseBaseM3) * 100;
+
+      const price = calculateSellPrice(
+        rollCost,
+        analysis.tier,
+        baseM3Pct,
+        tierModifiers,
+        optimalRangeModifier,
+      );
+      setSellPrice(price);
+    }
+  }, [analysis, baseStats, rollCost, tierModifiers, optimalRangeModifier]);
 
   const handleMinerTypeChange = (value: MinerType) => {
     setMinerType(value);
@@ -226,6 +270,12 @@ export default function MainAnalyzer() {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => setTierRangesOpen(true)}
+              >
+                Tier Ranges
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setSettingsOpen(true)}
               >
                 Settings
@@ -233,16 +283,23 @@ export default function MainAnalyzer() {
             </div>
           </div>
 
-          {sellPrice > 0 && (
-            <div className="flex items-center gap-2">
-              <Label>
-                Sell Price: {new Intl.NumberFormat().format(sellPrice)} ISK
-              </Label>
+          <div className="flex items-center gap-2">
+            <Label>
+              Sell Price:{' '}
+              {sellPrice > 0 ? (
+                <span>{new Intl.NumberFormat().format(sellPrice)} ISK</span>
+              ) : (
+                <span className="text-muted-foreground">
+                  Configure roll cost in Settings
+                </span>
+              )}
+            </Label>
+            {sellPrice > 0 && (
               <Button size="sm" onClick={handleCopySellPrice}>
                 Copy
               </Button>
-            </div>
-          )}
+            )}
+          </div>
 
           <div className="text-sm text-muted-foreground">{status}</div>
         </CardContent>
@@ -265,6 +322,11 @@ export default function MainAnalyzer() {
         tierModifiers={tierModifiers}
         optimalRangeModifier={optimalRangeModifier}
         onSave={handleSettingsSave}
+      />
+
+      <TierRangesDialog
+        open={tierRangesOpen}
+        onOpenChange={setTierRangesOpen}
       />
     </div>
   );

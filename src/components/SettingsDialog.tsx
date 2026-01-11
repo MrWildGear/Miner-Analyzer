@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +40,16 @@ export default function SettingsDialog({
   const [localOptimalRangeModifier, setLocalOptimalRangeModifier] =
     useState(optimalRangeModifier.toString());
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Sync local state with props when dialog opens or props change
+  useEffect(() => {
+    if (open) {
+      setLocalRollCost(rollCost.toString());
+      setLocalTierModifiers({ ...tierModifiers });
+      setLocalOptimalRangeModifier(optimalRangeModifier.toString());
+      setErrors({});
+    }
+  }, [open, rollCost, tierModifiers, optimalRangeModifier]);
 
   const handleSave = () => {
     const newErrors: Record<string, string> = {};
