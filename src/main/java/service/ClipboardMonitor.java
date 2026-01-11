@@ -10,6 +10,7 @@ import java.awt.datatransfer.UnsupportedFlavorException;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.atomic.AtomicReference;
 import analyzer.RollAnalyzer;
 import config.MinerConfig;
 import model.AnalysisResult;
@@ -27,7 +28,7 @@ public class ClipboardMonitor implements AutoCloseable {
     private final StatusUpdater statusUpdater;
 
     private String lastClipboardHash = null;
-    private volatile Timer clipboardTimer;
+    private final AtomicReference<Timer> clipboardTimer = new AtomicReference<>();
 
     // Adaptive polling intervals (in milliseconds)
     private static final long ACTIVE_INTERVAL = 300; // Fast polling when active
@@ -76,7 +77,7 @@ public class ClipboardMonitor implements AutoCloseable {
     public void start() {
         synchronized (this) {
             // Stop any existing timer before starting a new one
-            Timer oldTimer = clipboardTimer;
+            Timer oldTimer = clipboardTimer.get();
             if (oldTimer != null) {
                 oldTimer.cancel();
                 oldTimer.purge();
@@ -85,7 +86,7 @@ public class ClipboardMonitor implements AutoCloseable {
             lastChangeTime = System.currentTimeMillis();
             isIdle = false;
 
-            clipboardTimer = new Timer(true); // Daemon thread
+            clipboardTimer.set(new Timer(true)); // Daemon thread
             scheduleNextCheck(ACTIVE_INTERVAL);
         }
     }
@@ -97,7 +98,7 @@ public class ClipboardMonitor implements AutoCloseable {
      * @param interval The interval in milliseconds for the next check
      */
     private void scheduleNextCheck(long interval) {
-        Timer timer = clipboardTimer;
+        Timer timer = clipboardTimer.get();
         if (timer == null) {
             return;
         }
@@ -112,7 +113,8 @@ public class ClipboardMonitor implements AutoCloseable {
 
                 // Schedule next check with adaptive interval
                 synchronized (ClipboardMonitor.this) {
-                    if (clipboardTimer != null && clipboardTimer == timer) {
+                    Timer currentTimer = clipboardTimer.get();
+                    if (currentTimer != null && currentTimer == timer) {
                         scheduleNextCheck(nextInterval);
                     }
                 }
@@ -147,14 +149,14 @@ public class ClipboardMonitor implements AutoCloseable {
      * Stops the clipboard monitoring and cleans up resources. Safe to call multiple times.
      */
     public void stop() {
-        Timer timer = clipboardTimer;
+        Timer timer = clipboardTimer.get();
         if (timer != null) {
             synchronized (this) {
-                timer = clipboardTimer;
+                timer = clipboardTimer.get();
                 if (timer != null) {
                     timer.cancel();
                     timer.purge(); // Remove cancelled tasks
-                    clipboardTimer = null;
+                    clipboardTimer.set(null);
                 }
             }
         }
@@ -167,21 +169,6 @@ public class ClipboardMonitor implements AutoCloseable {
     @Override
     public void close() {
         stop();
-    }
-
-    /**
-     * Finalizer as a safety net to ensure cleanup if stop() isn't called. This helps prevent
-     * resource leaks in case of unexpected termination. Note: finalize() is deprecated but used
-     * here as a last-resort cleanup mechanism.
-     */
-    @SuppressWarnings("removal")
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            stop();
-        } finally {
-            super.finalize();
-        }
     }
 
     private void checkClipboard() {
