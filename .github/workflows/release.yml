@@ -56,19 +56,29 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml
+          git add package.json src-tauri/tauri.conf.json src-tauri/Cargo.toml src/version.ts
 
           # Check if there are changes to commit
           if git diff --staged --quiet; then
-            echo "Error: No changes detected after updating version files"
-            echo "This indicates the version update script may have failed"
-            exit 1
+            echo "No changes detected after updating version files"
+            echo "Checking if version ${{ inputs.version }} already exists..."
+            
+            # Check if tag already exists
+            if git rev-parse "v${{ inputs.version }}" >/dev/null 2>&1; then
+              echo "Tag v${{ inputs.version }} already exists. Skipping commit and tag creation."
+              echo "This workflow may have already been run for this version."
+            else
+              echo "Warning: Version files are already at ${{ inputs.version }}, but tag doesn't exist."
+              echo "Creating tag only..."
+              git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+              git push origin "v${{ inputs.version }}"
+            fi
+          else
+            git commit -m "chore: bump version to ${{ inputs.version }}"
+            git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
+            git push origin HEAD
+            git push origin "v${{ inputs.version }}"
           fi
-
-          git commit -m "chore: bump version to ${{ inputs.version }}"
-          git tag -a "v${{ inputs.version }}" -m "Release v${{ inputs.version }}"
-          git push origin HEAD
-          git push origin "v${{ inputs.version }}"
 
       - uses: tauri-apps/tauri-action@v0
         env:
