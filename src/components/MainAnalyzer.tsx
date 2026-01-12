@@ -13,6 +13,8 @@ import { getBaseStats } from '@/lib/config/minerConfig';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
+import ExportFormatDialog from './ExportFormatDialog';
+import { renderExportFormat } from '@/lib/export/formatRenderer';
 import { APP_VERSION } from '@/version';
 
 export default function MainAnalyzer() {
@@ -21,12 +23,18 @@ export default function MainAnalyzer() {
   const [baseStats, setBaseStats] = useState<Record<string, number>>({});
   const [status, setStatus] = useState('Monitoring clipboard...');
   const [tierRangesOpen, setTierRangesOpen] = useState(false);
+  const [exportFormatOpen, setExportFormatOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
   const [lastExportText, setLastExportText] = useState<string>('');
   const [useEffectiveM3, setUseEffectiveM3] = useState<boolean>(() => {
     // Default to false (Base M3/sec)
     const saved = localStorage.getItem('exportUseEffectiveM3');
     return saved === 'true';
+  });
+  const [exportFormat, setExportFormat] = useState<string>(() => {
+    // Default format: {tier} : ({m3Pct}%) {optimalRangePct} [{minerType}]
+    const saved = localStorage.getItem('exportFormat');
+    return saved || '{tier} : ({m3Pct}%) {optimalRangePct} [{minerType}]';
   });
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     // Initialize from localStorage or default to true (dark mode)
@@ -53,6 +61,11 @@ export default function MainAnalyzer() {
     // Save export preference
     localStorage.setItem('exportUseEffectiveM3', useEffectiveM3.toString());
   }, [useEffectiveM3]);
+
+  useEffect(() => {
+    // Save export format
+    localStorage.setItem('exportFormat', exportFormat);
+  }, [exportFormat]);
 
   useEffect(() => {
     // Clipboard monitoring
@@ -104,47 +117,13 @@ export default function MainAnalyzer() {
             baseResidueMult,
           );
 
-          // Calculate percentage based on selected metric
-          const rolledValue = useEffectiveM3 ? result.effectiveM3PerSec : result.m3PerSec;
-          const baseValue = useEffectiveM3 ? baseEffectiveM3PerSec : baseBaseM3PerSec;
-          const percentageChange = ((rolledValue - baseValue) / baseValue) * 100;
-
-          // Copy tier to clipboard
-          // Format: A : (+34.4%) {-04.1%} [ORE]
-          // Always space after colon, first percentage with sign, second can be +/- 
-          // Add leading zero for values < 10% (absolute) for proper sorting
-          const formatPercentage = (value: number): string => {
-            const absValue = Math.abs(value);
-            if (absValue < 10) {
-              const sign = value >= 0 ? '' : '-';
-              const padded = absValue.toFixed(1).padStart(4, '0'); // "09.4"
-              return sign + padded;
-            }
-            return value.toFixed(1);
-          };
-
-          const percentageSign = percentageChange >= 0 ? '+' : '';
-          const percentageFormatted = formatPercentage(percentageChange);
-          // Plus tiers have no space: "A+:", regular tiers have space: "A :"
-          const tier = result.tier.trim();
-          const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
-          let tierText = `${tier}${spaceAfterTier}: (${percentageSign}${percentageFormatted}%)`;
-          
-          // Add optimal range percentage if optimal range exists (shows + or -)
-          const rolledOptimalRange = result.stats.OptimalRange;
-          const baseOptimalRange = baseStats.OptimalRange;
-          if (
-            rolledOptimalRange !== undefined &&
-            baseOptimalRange !== undefined &&
-            baseOptimalRange > 0
-          ) {
-            const optimalRangePct = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
-            const sign = optimalRangePct >= 0 ? '+' : '';
-            const optimalRangeFormatted = formatPercentage(optimalRangePct);
-            tierText += ` {${sign}${optimalRangeFormatted}%}`;
-          }
-          
-          tierText += ` [${minerType}]`;
+          // Generate export text using custom format
+          const tierText = renderExportFormat(exportFormat, {
+            analysis: result,
+            baseStats,
+            minerType,
+            useEffectiveM3,
+          });
           await writeText(tierText);
           setLastExportText(tierText);
 
@@ -162,68 +141,18 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, lastExportText, useEffectiveM3]);
+  }, [minerType, lastClipboardHash, lastExportText, useEffectiveM3, exportFormat]);
 
-  // Recalculate export when toggle changes (if analysis exists)
+  // Recalculate export when format, toggle, or analysis changes
   useEffect(() => {
     if (analysis && Object.keys(baseStats).length > 0) {
       const generateExportText = async () => {
-        const baseMiningAmount = baseStats.MiningAmount ?? 0;
-        const baseActivationTime = baseStats.ActivationTime ?? 0;
-        const baseCritChance = baseStats.CriticalSuccessChance ?? 0;
-        const baseCritBonus = baseStats.CriticalSuccessBonusYield ?? 0;
-        const baseResidueProb = baseStats.ResidueProbability ?? 0;
-        const baseResidueMult = baseStats.ResidueVolumeMultiplier ?? 0;
-
-        const baseBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
-          baseMiningAmount,
-          baseActivationTime,
-        );
-        const baseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
-          baseMiningAmount,
-          baseActivationTime,
-          baseCritChance,
-          baseCritBonus,
-          baseResidueProb,
-          baseResidueMult,
-        );
-
-        // Calculate percentage based on selected metric
-        const rolledValue = useEffectiveM3 ? analysis.effectiveM3PerSec : analysis.m3PerSec;
-        const baseValue = useEffectiveM3 ? baseEffectiveM3PerSec : baseBaseM3PerSec;
-        const percentageChange = ((rolledValue - baseValue) / baseValue) * 100;
-
-        const formatPercentage = (value: number): string => {
-          const absValue = Math.abs(value);
-          if (absValue < 10) {
-            const sign = value >= 0 ? '' : '-';
-            const padded = absValue.toFixed(1).padStart(4, '0');
-            return sign + padded;
-          }
-          return value.toFixed(1);
-        };
-
-        const percentageSign = percentageChange >= 0 ? '+' : '';
-        const percentageFormatted = formatPercentage(percentageChange);
-        const tier = analysis.tier.trim();
-        const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
-        let tierText = `${tier}${spaceAfterTier}: (${percentageSign}${percentageFormatted}%)`;
-
-        // Add optimal range percentage if optimal range exists
-        const rolledOptimalRange = analysis.stats.OptimalRange;
-        const baseOptimalRange = baseStats.OptimalRange;
-        if (
-          rolledOptimalRange !== undefined &&
-          baseOptimalRange !== undefined &&
-          baseOptimalRange > 0
-        ) {
-          const optimalRangePct = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
-          const sign = optimalRangePct >= 0 ? '+' : '';
-          const optimalRangeFormatted = formatPercentage(optimalRangePct);
-          tierText += ` {${sign}${optimalRangeFormatted}%}`;
-        }
-
-        tierText += ` [${minerType}]`;
+        const tierText = renderExportFormat(exportFormat, {
+          analysis,
+          baseStats,
+          minerType,
+          useEffectiveM3,
+        });
         await writeText(tierText);
         setLastExportText(tierText);
       };
@@ -232,7 +161,7 @@ export default function MainAnalyzer() {
         console.error('Error regenerating export:', error);
       });
     }
-  }, [useEffectiveM3, analysis, baseStats, minerType]);
+  }, [useEffectiveM3, analysis, baseStats, minerType, exportFormat]);
 
   const handleMinerTypeChange = (value: MinerType) => {
     setMinerType(value);
@@ -292,6 +221,12 @@ export default function MainAnalyzer() {
               >
                 Tier Ranges
               </Button>
+              <Button
+                variant="outline"
+                onClick={() => setExportFormatOpen(true)}
+              >
+                Export Format
+              </Button>
             </div>
           </div>
 
@@ -329,6 +264,13 @@ export default function MainAnalyzer() {
       <TierRangesDialog
         open={tierRangesOpen}
         onOpenChange={setTierRangesOpen}
+      />
+
+      <ExportFormatDialog
+        open={exportFormatOpen}
+        onOpenChange={setExportFormatOpen}
+        format={exportFormat}
+        onSave={setExportFormat}
       />
     </div>
   );
