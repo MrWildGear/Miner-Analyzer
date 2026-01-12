@@ -35,13 +35,10 @@ const AVAILABLE_PLACEHOLDERS = [
   { value: '{ResidueVolumeMultiplier}', label: 'Residue Volume Multiplier' },
 ];
 
-const DEFAULT_FORMAT = '{tier} : ({m3Pct}%) {optimalRangePct} [{minerType}]';
+const DEFAULT_FORMAT = '{tier} : {m3Pct}% {optimalRangePct} {minerType}';
 
-// Note: The default format matches the original behavior where:
-// - Tier has a space after it (unless it ends with '+')
-// - Base M3/sec percentage is shown
-// - Optimal Range percentage is shown if available
-// - Miner type is shown in brackets
+// Note: The default format is minimal - users can add their own formatting
+// characters like parentheses, brackets, etc. as needed.
 
 export default function ExportFormatDialog({
   open,
@@ -66,7 +63,7 @@ export default function ExportFormatDialog({
         .replace(/{effectiveM3Pct}/g, '+35.2')
         .replace(/{m3PerSec}/g, '12.5')
         .replace(/{effectiveM3PerSec}/g, '13.2')
-        .replace(/{optimalRangePct}/g, '{+05.2%}')
+        .replace(/{optimalRangePct}/g, '+05.2%')
         .replace(/{optimalRange}/g, '19.5')
         .replace(/{minerType}/g, 'ORE')
         .replace(/{MiningAmount}/g, '210')
@@ -88,7 +85,7 @@ export default function ExportFormatDialog({
       .replace(/{effectiveM3Pct}/g, '+35.2')
       .replace(/{m3PerSec}/g, '12.5')
       .replace(/{effectiveM3PerSec}/g, '13.2')
-      .replace(/{optimalRangePct}/g, '{+05.2%}')
+      .replace(/{optimalRangePct}/g, '-04.2%')
       .replace(/{optimalRange}/g, '19.5')
       .replace(/{minerType}/g, 'ORE')
       .replace(/{MiningAmount}/g, '210')
@@ -111,7 +108,7 @@ export default function ExportFormatDialog({
       .replace(/{effectiveM3Pct}/g, '+35.2')
       .replace(/{m3PerSec}/g, '12.5')
       .replace(/{effectiveM3PerSec}/g, '13.2')
-      .replace(/{optimalRangePct}/g, '{+05.2%}')
+      .replace(/{optimalRangePct}/g, '-04.2%')
       .replace(/{optimalRange}/g, '19.5')
       .replace(/{minerType}/g, 'ORE')
       .replace(/{MiningAmount}/g, '210')

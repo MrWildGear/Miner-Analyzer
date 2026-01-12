@@ -32,9 +32,9 @@ export default function MainAnalyzer() {
     return saved === 'true';
   });
   const [exportFormat, setExportFormat] = useState<string>(() => {
-    // Default format: {tier} : ({m3Pct}%) {optimalRangePct} [{minerType}]
+    // Default format: {tier} : {m3Pct}% {optimalRangePct} {minerType}
     const saved = localStorage.getItem('exportFormat');
-    return saved || '{tier} : ({m3Pct}%) {optimalRangePct} [{minerType}]';
+    return saved || '{tier} : {m3Pct}% {optimalRangePct} {minerType}';
   });
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     // Initialize from localStorage or default to true (dark mode)

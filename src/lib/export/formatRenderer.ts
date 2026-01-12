@@ -51,12 +51,16 @@ export function renderExportFormat(
   const formatPercentage = (value: number): string => {
     const absValue = Math.abs(value);
     if (absValue < 10) {
-      const sign = value >= 0 ? '+' : '';
-      const padded = absValue.toFixed(1).padStart(4, '0');
+      const sign = value >= 0 ? '+' : '-';
+      // Ensure 2 digits before decimal point (e.g., "05.2" not "5.2")
+      const parts = absValue.toFixed(1).split('.');
+      const integerPart = parts[0].padStart(2, '0');
+      const padded = `${integerPart}.${parts[1]}`;
       return sign + padded;
     }
-    const sign = value >= 0 ? '+' : '';
-    return sign + value.toFixed(1);
+    // For values >= 10, show + for positive, - for negative
+    const sign = value >= 0 ? '+' : '-';
+    return sign + absValue.toFixed(1);
   };
 
   // Calculate optimal range percentage if available
@@ -69,9 +73,8 @@ export function renderExportFormat(
     baseOptimalRange > 0
   ) {
     const optimalRangePctValue = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
-    const sign = optimalRangePctValue >= 0 ? '+' : '';
     const formatted = formatPercentage(optimalRangePctValue);
-    optimalRangePct = `{${sign}${formatted}%}`;
+    optimalRangePct = `${formatted}%`;
   }
 
   // Build replacement map
