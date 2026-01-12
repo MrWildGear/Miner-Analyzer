@@ -25,3 +25,6 @@ dist-ssr
 
 # Tauri
 src-tauri/target
+
+# Large SDE files (exceed GitHub's 100MB limit)
+public/sde/*.jsonl
