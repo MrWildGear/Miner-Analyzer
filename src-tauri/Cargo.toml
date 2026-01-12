@@ -1,6 +1,6 @@
 [package]
 name = "eve-miner-analyzer"
-version = "2.0.1"
+version = "2.0.8"
 description = "EVE Online Strip Miner Roll Analyzer"
 authors = ["you"]
 edition = "2021"
