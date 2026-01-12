@@ -5,7 +5,6 @@ interface FormatContext {
   analysis: AnalysisResult;
   baseStats: Record<string, number>;
   minerType: MinerType;
-  useEffectiveM3: boolean;
 }
 
 /**
@@ -19,7 +18,6 @@ export function renderExportFormat(
     analysis,
     baseStats,
     minerType,
-    useEffectiveM3,
   } = context;
 
   // Calculate base values
@@ -43,10 +41,9 @@ export function renderExportFormat(
     baseResidueMult,
   );
 
-  // Calculate percentages
-  const rolledValue = useEffectiveM3 ? analysis.effectiveM3PerSec : analysis.m3PerSec;
-  const baseValue = useEffectiveM3 ? baseEffectiveM3PerSec : baseBaseM3PerSec;
-  const percentageChange = ((rolledValue - baseValue) / baseValue) * 100;
+  // Calculate percentages for both Base and Effective M3/sec
+  const baseM3Pct = ((analysis.m3PerSec - baseBaseM3PerSec) / baseBaseM3PerSec) * 100;
+  const effectiveM3Pct = ((analysis.effectiveM3PerSec - baseEffectiveM3PerSec) / baseEffectiveM3PerSec) * 100;
 
   const formatPercentage = (value: number): string => {
     const absValue = Math.abs(value);
@@ -83,8 +80,8 @@ export function renderExportFormat(
 
   const replacements: Record<string, string> = {
     '{tier}': tier,
-    '{m3Pct}': formatPercentage(((analysis.m3PerSec - baseBaseM3PerSec) / baseBaseM3PerSec) * 100),
-    '{effectiveM3Pct}': formatPercentage(percentageChange),
+    '{m3Pct}': formatPercentage(baseM3Pct),
+    '{effectiveM3Pct}': formatPercentage(effectiveM3Pct),
     '{m3PerSec}': analysis.m3PerSec.toFixed(2),
     '{effectiveM3PerSec}': analysis.effectiveM3PerSec.toFixed(2),
     '{optimalRangePct}': optimalRangePct || '',

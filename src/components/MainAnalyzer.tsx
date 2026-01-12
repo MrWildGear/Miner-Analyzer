@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
 import { getBaseStats } from '@/lib/config/minerConfig';
@@ -26,11 +25,6 @@ export default function MainAnalyzer() {
   const [exportFormatOpen, setExportFormatOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
   const [lastExportText, setLastExportText] = useState<string>('');
-  const [useEffectiveM3, setUseEffectiveM3] = useState<boolean>(() => {
-    // Default to false (Base M3/sec)
-    const saved = localStorage.getItem('exportUseEffectiveM3');
-    return saved === 'true';
-  });
   const [exportFormat, setExportFormat] = useState<string>(() => {
     // Default format: {tier} : {m3Pct}% {optimalRangePct} {minerType}
     const saved = localStorage.getItem('exportFormat');
@@ -56,11 +50,6 @@ export default function MainAnalyzer() {
       localStorage.setItem('theme', 'light');
     }
   }, [isDarkMode]);
-
-  useEffect(() => {
-    // Save export preference
-    localStorage.setItem('exportUseEffectiveM3', useEffectiveM3.toString());
-  }, [useEffectiveM3]);
 
   useEffect(() => {
     // Save export format
@@ -122,7 +111,6 @@ export default function MainAnalyzer() {
             analysis: result,
             baseStats,
             minerType,
-            useEffectiveM3,
           });
           await writeText(tierText);
           setLastExportText(tierText);
@@ -141,7 +129,7 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, lastExportText, useEffectiveM3, exportFormat]);
+  }, [minerType, lastClipboardHash, lastExportText, exportFormat]);
 
   // Recalculate export when format, toggle, or analysis changes
   useEffect(() => {
@@ -151,7 +139,6 @@ export default function MainAnalyzer() {
           analysis,
           baseStats,
           minerType,
-          useEffectiveM3,
         });
         await writeText(tierText);
         setLastExportText(tierText);
@@ -161,7 +148,7 @@ export default function MainAnalyzer() {
         console.error('Error regenerating export:', error);
       });
     }
-  }, [useEffectiveM3, analysis, baseStats, minerType, exportFormat]);
+  }, [analysis, baseStats, minerType, exportFormat]);
 
   const handleMinerTypeChange = (value: MinerType) => {
     setMinerType(value);
@@ -227,23 +214,6 @@ export default function MainAnalyzer() {
               >
                 Export Format
               </Button>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="export-metric" className="text-sm">
-                Export: Base M3/sec
-              </Label>
-              <Switch
-                id="export-metric"
-                checked={useEffectiveM3}
-                onCheckedChange={setUseEffectiveM3}
-                aria-label="Toggle between Base M3/sec and Effective M3/sec"
-              />
-              <Label htmlFor="export-metric" className="text-sm">
-                Effective M3/sec
-              </Label>
             </div>
           </div>
 
