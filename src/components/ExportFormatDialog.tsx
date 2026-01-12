@@ -8,7 +8,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
@@ -192,7 +191,7 @@ export default function ExportFormatDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+      <DialogContent className="max-w-[90vw] w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Export Format</DialogTitle>
           <DialogDescription>
@@ -231,7 +230,7 @@ export default function ExportFormatDialog({
 
           <div className="space-y-2">
             <Label>Available Placeholders (Click)</Label>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {AVAILABLE_PLACEHOLDERS.map((placeholder) => (
                 <Button
                   key={placeholder.value}
@@ -243,12 +242,12 @@ export default function ExportFormatDialog({
                     const position = textarea?.selectionStart ?? localFormat.length;
                     handleInsertPlaceholder(placeholder.value, position);
                   }}
-                  className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent"
+                  className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent overflow-hidden"
                 >
-                  <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                  <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 break-all">
                     {placeholder.value}
                   </code>
-                  <span className="text-xs text-muted-foreground leading-tight">
+                  <span className="text-xs text-muted-foreground leading-tight wrap-break-word w-full">
                     {placeholder.label}
                   </span>
                 </Button>
