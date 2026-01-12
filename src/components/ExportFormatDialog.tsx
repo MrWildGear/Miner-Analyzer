@@ -9,7 +9,9 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 
 interface ExportFormatDialogProps {
   open: boolean;
@@ -129,9 +131,9 @@ export default function ExportFormatDialog({
       handleFormatChange(newFormat);
       // Restore cursor position after placeholder
       setTimeout(() => {
-        const input = document.getElementById('export-format') as HTMLInputElement;
-        if (input) {
-          input.setSelectionRange(position + placeholder.length, position + placeholder.length);
+        const textarea = document.getElementById('export-format') as HTMLTextAreaElement;
+        if (textarea) {
+          textarea.setSelectionRange(position + placeholder.length, position + placeholder.length);
         }
       }, 0);
     } else {
@@ -161,17 +163,17 @@ export default function ExportFormatDialog({
     setIsDraggingOver(false);
     const placeholder = e.dataTransfer.getData('text/plain');
     if (placeholder) {
-      const input = e.currentTarget as HTMLInputElement;
-      const position = input.selectionStart ?? localFormat.length;
+      const textarea = e.currentTarget as HTMLTextAreaElement;
+      const position = textarea.selectionStart ?? localFormat.length;
       handleInsertPlaceholder(placeholder, position);
     }
   };
 
-  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleInputFocus = (e: React.FocusEvent<HTMLTextAreaElement>) => {
     setCursorPosition(e.target.selectionStart);
   };
 
-  const handleInputSelect = (e: React.SyntheticEvent<HTMLInputElement>) => {
+  const handleInputSelect = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
     const target = e.currentTarget;
     setCursorPosition(target.selectionStart);
   };
@@ -202,7 +204,7 @@ export default function ExportFormatDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="export-format">Format Template</Label>
-            <Input
+            <Textarea
               id="export-format"
               value={localFormat}
               onChange={(e) => handleFormatChange(e.target.value)}
@@ -212,7 +214,11 @@ export default function ExportFormatDialog({
               onDragLeave={handleDragLeave}
               onDrop={handleDrop}
               placeholder={DEFAULT_FORMAT}
-              className={isDraggingOver ? 'ring-2 ring-primary border-primary' : ''}
+              className={cn(
+                'min-h-[108px]',
+                isDraggingOver ? 'ring-2 ring-primary border-primary' : ''
+              )}
+              wrap="soft"
             />
             {error && <p className="text-sm text-destructive">{error}</p>}
             {!error && preview && (
@@ -224,24 +230,25 @@ export default function ExportFormatDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Available Placeholders (Drag & Drop or Click)</Label>
+            <Label>Available Placeholders (Click)</Label>
             <div className="grid grid-cols-2 gap-2">
               {AVAILABLE_PLACEHOLDERS.map((placeholder) => (
                 <Button
                   key={placeholder.value}
                   variant="outline"
-                  size="sm"
                   draggable
                   onDragStart={(e) => handleDragStart(e, placeholder.value)}
                   onClick={() => {
-                    const input = document.getElementById('export-format') as HTMLInputElement;
-                    const position = input?.selectionStart ?? localFormat.length;
+                    const textarea = document.getElementById('export-format') as HTMLTextAreaElement;
+                    const position = textarea?.selectionStart ?? localFormat.length;
                     handleInsertPlaceholder(placeholder.value, position);
                   }}
-                  className="justify-start text-left cursor-grab active:cursor-grabbing hover:bg-accent"
+                  className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent"
                 >
-                  <code className="text-xs mr-2">{placeholder.value}</code>
-                  <span className="text-xs text-muted-foreground">
+                  <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1">
+                    {placeholder.value}
+                  </code>
+                  <span className="text-xs text-muted-foreground leading-tight">
                     {placeholder.label}
                   </span>
                 </Button>
