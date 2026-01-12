@@ -6,20 +6,12 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
 import { getBaseStats } from '@/lib/config/minerConfig';
-import {
-  getRollCost,
-  saveRollCost,
-  loadTierModifiers,
-  saveTierModifiers,
-  loadOptimalRangeModifier,
-  saveOptimalRangeModifier,
-  calculateSellPrice,
-} from '@/lib/config/configManager';
+import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
-import SettingsDialog from './SettingsDialog';
 import TierRangesDialog from './TierRangesDialog';
 import { APP_VERSION } from '@/version';
 
@@ -28,22 +20,14 @@ export default function MainAnalyzer() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [baseStats, setBaseStats] = useState<Record<string, number>>({});
   const [status, setStatus] = useState('Monitoring clipboard...');
-  const [sellPrice, setSellPrice] = useState<number>(0);
-  const [rollCost, setRollCost] = useState<number>(0);
-  const [tierModifiers, setTierModifiers] = useState({
-    S: 2,
-    A: 1.8,
-    B: 1.6,
-    C: 1.4,
-    D: 1.2,
-    E: 1,
-    F: 0.8,
-  });
-  const [optimalRangeModifier, setOptimalRangeModifier] = useState<number>(1);
-  const [settingsOpen, setSettingsOpen] = useState(false);
   const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
   const [lastExportText, setLastExportText] = useState<string>('');
+  const [useEffectiveM3, setUseEffectiveM3] = useState<boolean>(() => {
+    // Default to false (Base M3/sec)
+    const saved = localStorage.getItem('exportUseEffectiveM3');
+    return saved === 'true';
+  });
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     // Initialize from localStorage or default to true (dark mode)
     const saved = localStorage.getItem('theme');
@@ -66,17 +50,9 @@ export default function MainAnalyzer() {
   }, [isDarkMode]);
 
   useEffect(() => {
-    // Load config on mount
-    const loadConfig = async () => {
-      const cost = await getRollCost();
-      const modifiers = await loadTierModifiers();
-      const optimalRange = await loadOptimalRangeModifier();
-      setRollCost(cost);
-      setTierModifiers(modifiers);
-      setOptimalRangeModifier(optimalRange);
-    };
-    loadConfig();
-  }, []);
+    // Save export preference
+    localStorage.setItem('exportUseEffectiveM3', useEffectiveM3.toString());
+  }, [useEffectiveM3]);
 
   useEffect(() => {
     // Clipboard monitoring
@@ -107,19 +83,31 @@ export default function MainAnalyzer() {
           const result = analyzeRoll(parsedStats, baseStats, minerType);
           setAnalysis(result);
 
-          // Calculate sell price
-          const baseM3 = result.m3PerSec;
-          const baseBaseM3 = baseStats.MiningAmount / baseStats.ActivationTime;
-          const baseM3Pct = ((baseM3 - baseBaseM3) / baseBaseM3) * 100;
+          // Calculate base values for both metrics
+          const baseMiningAmount = baseStats.MiningAmount ?? 0;
+          const baseActivationTime = baseStats.ActivationTime ?? 0;
+          const baseCritChance = baseStats.CriticalSuccessChance ?? 0;
+          const baseCritBonus = baseStats.CriticalSuccessBonusYield ?? 0;
+          const baseResidueProb = baseStats.ResidueProbability ?? 0;
+          const baseResidueMult = baseStats.ResidueVolumeMultiplier ?? 0;
 
-          const price = calculateSellPrice(
-            rollCost,
-            result.tier,
-            baseM3Pct,
-            tierModifiers,
-            optimalRangeModifier,
+          const baseBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
+            baseMiningAmount,
+            baseActivationTime,
           );
-          setSellPrice(price);
+          const baseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+            baseMiningAmount,
+            baseActivationTime,
+            baseCritChance,
+            baseCritBonus,
+            baseResidueProb,
+            baseResidueMult,
+          );
+
+          // Calculate percentage based on selected metric
+          const rolledValue = useEffectiveM3 ? result.effectiveM3PerSec : result.m3PerSec;
+          const baseValue = useEffectiveM3 ? baseEffectiveM3PerSec : baseBaseM3PerSec;
+          const percentageChange = ((rolledValue - baseValue) / baseValue) * 100;
 
           // Copy tier to clipboard
           // Format: A : (+34.4%) {-04.1%} [ORE]
@@ -135,12 +123,12 @@ export default function MainAnalyzer() {
             return value.toFixed(1);
           };
 
-          const baseM3Sign = baseM3Pct >= 0 ? '+' : '';
-          const baseM3Formatted = formatPercentage(baseM3Pct);
+          const percentageSign = percentageChange >= 0 ? '+' : '';
+          const percentageFormatted = formatPercentage(percentageChange);
           // Plus tiers have no space: "A+:", regular tiers have space: "A :"
           const tier = result.tier.trim();
           const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
-          let tierText = `${tier}${spaceAfterTier}: (${baseM3Sign}${baseM3Formatted}%)`;
+          let tierText = `${tier}${spaceAfterTier}: (${percentageSign}${percentageFormatted}%)`;
           
           // Add optimal range percentage if optimal range exists (shows + or -)
           const rolledOptimalRange = result.stats.OptimalRange;
@@ -174,53 +162,83 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, lastExportText, rollCost, tierModifiers, optimalRangeModifier]);
+  }, [minerType, lastClipboardHash, lastExportText, useEffectiveM3]);
 
-  // Recalculate sell price when analysis or pricing settings change
+  // Recalculate export when toggle changes (if analysis exists)
   useEffect(() => {
     if (analysis && Object.keys(baseStats).length > 0) {
-      const baseM3 = analysis.m3PerSec;
-      const baseBaseM3 = baseStats.MiningAmount / baseStats.ActivationTime;
-      const baseM3Pct = ((baseM3 - baseBaseM3) / baseBaseM3) * 100;
+      const generateExportText = async () => {
+        const baseMiningAmount = baseStats.MiningAmount ?? 0;
+        const baseActivationTime = baseStats.ActivationTime ?? 0;
+        const baseCritChance = baseStats.CriticalSuccessChance ?? 0;
+        const baseCritBonus = baseStats.CriticalSuccessBonusYield ?? 0;
+        const baseResidueProb = baseStats.ResidueProbability ?? 0;
+        const baseResidueMult = baseStats.ResidueVolumeMultiplier ?? 0;
 
-      const price = calculateSellPrice(
-        rollCost,
-        analysis.tier,
-        baseM3Pct,
-        tierModifiers,
-        optimalRangeModifier,
-      );
-      setSellPrice(price);
+        const baseBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
+          baseMiningAmount,
+          baseActivationTime,
+        );
+        const baseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+          baseMiningAmount,
+          baseActivationTime,
+          baseCritChance,
+          baseCritBonus,
+          baseResidueProb,
+          baseResidueMult,
+        );
+
+        // Calculate percentage based on selected metric
+        const rolledValue = useEffectiveM3 ? analysis.effectiveM3PerSec : analysis.m3PerSec;
+        const baseValue = useEffectiveM3 ? baseEffectiveM3PerSec : baseBaseM3PerSec;
+        const percentageChange = ((rolledValue - baseValue) / baseValue) * 100;
+
+        const formatPercentage = (value: number): string => {
+          const absValue = Math.abs(value);
+          if (absValue < 10) {
+            const sign = value >= 0 ? '' : '-';
+            const padded = absValue.toFixed(1).padStart(4, '0');
+            return sign + padded;
+          }
+          return value.toFixed(1);
+        };
+
+        const percentageSign = percentageChange >= 0 ? '+' : '';
+        const percentageFormatted = formatPercentage(percentageChange);
+        const tier = analysis.tier.trim();
+        const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
+        let tierText = `${tier}${spaceAfterTier}: (${percentageSign}${percentageFormatted}%)`;
+
+        // Add optimal range percentage if optimal range exists
+        const rolledOptimalRange = analysis.stats.OptimalRange;
+        const baseOptimalRange = baseStats.OptimalRange;
+        if (
+          rolledOptimalRange !== undefined &&
+          baseOptimalRange !== undefined &&
+          baseOptimalRange > 0
+        ) {
+          const optimalRangePct = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
+          const sign = optimalRangePct >= 0 ? '+' : '';
+          const optimalRangeFormatted = formatPercentage(optimalRangePct);
+          tierText += ` {${sign}${optimalRangeFormatted}%}`;
+        }
+
+        tierText += ` [${minerType}]`;
+        await writeText(tierText);
+        setLastExportText(tierText);
+      };
+
+      generateExportText().catch((error) => {
+        console.error('Error regenerating export:', error);
+      });
     }
-  }, [analysis, baseStats, rollCost, tierModifiers, optimalRangeModifier]);
+  }, [useEffectiveM3, analysis, baseStats, minerType]);
 
   const handleMinerTypeChange = (value: MinerType) => {
     setMinerType(value);
     setAnalysis(null);
     setBaseStats({});
     setStatus('Miner type changed. Waiting for clipboard update...');
-    setSellPrice(0);
-  };
-
-  const handleCopySellPrice = async () => {
-    if (sellPrice > 0) {
-      await writeText(Math.floor(sellPrice).toString());
-      setStatus('Sell price copied to clipboard');
-    }
-  };
-
-  const handleSettingsSave = async (
-    newRollCost: number,
-    newTierModifiers: typeof tierModifiers,
-    newOptimalRangeModifier: number,
-  ) => {
-    await saveRollCost(newRollCost);
-    await saveTierModifiers(newTierModifiers);
-    await saveOptimalRangeModifier(newOptimalRangeModifier);
-    setRollCost(newRollCost);
-    setTierModifiers(newTierModifiers);
-    setOptimalRangeModifier(newOptimalRangeModifier);
-    setSettingsOpen(false);
   };
 
   return (
@@ -274,31 +292,24 @@ export default function MainAnalyzer() {
               >
                 Tier Ranges
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setSettingsOpen(true)}
-              >
-                Settings
-              </Button>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Label>
-              Sell Price:{' '}
-              {sellPrice > 0 ? (
-                <span>{new Intl.NumberFormat().format(sellPrice)} ISK</span>
-              ) : (
-                <span className="text-muted-foreground">
-                  Configure roll cost in Settings
-                </span>
-              )}
-            </Label>
-            {sellPrice > 0 && (
-              <Button size="sm" onClick={handleCopySellPrice}>
-                Copy
-              </Button>
-            )}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Label htmlFor="export-metric" className="text-sm">
+                Export: Base M3/sec
+              </Label>
+              <Switch
+                id="export-metric"
+                checked={useEffectiveM3}
+                onCheckedChange={setUseEffectiveM3}
+                aria-label="Toggle between Base M3/sec and Effective M3/sec"
+              />
+              <Label htmlFor="export-metric" className="text-sm">
+                Effective M3/sec
+              </Label>
+            </div>
           </div>
 
           <div className="text-sm text-muted-foreground">{status}</div>
@@ -314,15 +325,6 @@ export default function MainAnalyzer() {
           />
         </div>
       )}
-
-      <SettingsDialog
-        open={settingsOpen}
-        onOpenChange={setSettingsOpen}
-        rollCost={rollCost}
-        tierModifiers={tierModifiers}
-        optimalRangeModifier={optimalRangeModifier}
-        onSave={handleSettingsSave}
-      />
 
       <TierRangesDialog
         open={tierRangesOpen}

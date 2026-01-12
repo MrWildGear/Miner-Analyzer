@@ -15,14 +15,11 @@
         "label": "main",
         "title": "EVE Online Strip Miner Roll Analyzer",
         "width": 900,
-        "height": 700,
+        "height": 900,
         "resizable": true,
         "fullscreen": false
       }
-    ],
-    "security": {
-      "csp": null
-    }
+    ]
   },
   "plugins": {
     "tauri-typegen": {
