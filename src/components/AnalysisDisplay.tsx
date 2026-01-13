@@ -126,20 +126,6 @@ export default function AnalysisDisplay({
       baseResidueProb,
       baseResidueMult,
     );
-  const baseRealWorldM3PerSec =
-    MiningCalculator.calculateRealWorldBaseM3PerSec(
-      baseMiningAmount,
-      baseActivationTime,
-    );
-  const baseRealWorldEffectiveM3PerSec =
-    MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-      baseMiningAmount,
-      baseActivationTime,
-      baseCritChance,
-      baseCritBonus,
-      baseResidueProb,
-      baseResidueMult,
-    );
 
   // Filter stats to display (only those in ROLL_ANALYSIS_STATS that exist)
   const statsToDisplay = ROLL_ANALYSIS_STATS.filter(
@@ -228,16 +214,14 @@ export default function AnalysisDisplay({
                 <tr className="border-b">
                   <td className="p-2">Base M3/sec</td>
                   <td className="text-right p-2">
-                    {baseM3PerSec.toFixed(2)} (
-                    {baseRealWorldM3PerSec.toFixed(1)})
+                    {baseM3PerSec.toFixed(2)}
                   </td>
                   <td
                     className={`text-right p-2 ${
                       baseM3Pct > 0 ? 'text-green-500' : 'text-red-500'
                     }`}
                   >
-                    {analysis.m3PerSec.toFixed(2)} (
-                    {analysis.realWorldM3PerSec.toFixed(1)})
+                    {analysis.m3PerSec.toFixed(2)}
                   </td>
                   <td
                     className={`text-right p-2 ${
@@ -251,16 +235,14 @@ export default function AnalysisDisplay({
                 <tr className="border-b">
                   <td className="p-2">Effective M3/sec</td>
                   <td className="text-right p-2">
-                    {baseEffectiveM3PerSec.toFixed(2)} (
-                    {baseRealWorldEffectiveM3PerSec.toFixed(1)})
+                    {baseEffectiveM3PerSec.toFixed(2)}
                   </td>
                   <td
                     className={`text-right p-2 ${
                       effectiveM3Pct > 0 ? 'text-green-500' : 'text-red-500'
                     }`}
                   >
-                    {analysis.effectiveM3PerSec.toFixed(2)} (
-                    {analysis.realWorldEffectiveM3PerSec.toFixed(1)})
+                    {analysis.effectiveM3PerSec.toFixed(2)}
                   </td>
                   <td
                     className={`text-right p-2 ${

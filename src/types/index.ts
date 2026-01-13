@@ -5,9 +5,6 @@ export interface AnalysisResult {
   m3PerSec: number;
   basePlusCritsM3PerSec: number | null;
   effectiveM3PerSec: number;
-  realWorldM3PerSec: number;
-  realWorldBasePlusCritsM3PerSec: number | null;
-  realWorldEffectiveM3PerSec: number;
   tier: string;
 }
 

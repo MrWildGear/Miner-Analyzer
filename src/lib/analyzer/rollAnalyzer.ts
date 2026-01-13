@@ -12,9 +12,6 @@ export function analyzeRoll(
     m3PerSec: 0,
     basePlusCritsM3PerSec: null,
     effectiveM3PerSec: 0,
-    realWorldM3PerSec: 0,
-    realWorldBasePlusCritsM3PerSec: null,
-    realWorldEffectiveM3PerSec: 0,
     tier: 'F',
   };
 
@@ -73,44 +70,6 @@ export function analyzeRoll(
     );
   }
 
-  // Calculate real-world values
-  result.realWorldM3PerSec =
-    MiningCalculator.calculateRealWorldBaseM3PerSec(
-      miningAmount,
-      activationTime,
-    );
-
-  if (minerType === 'ORE' || minerType === 'Ice') {
-    result.realWorldEffectiveM3PerSec =
-      MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-        miningAmount,
-        activationTime,
-        critChance,
-        critBonus,
-        0,
-        0,
-      );
-    result.realWorldBasePlusCritsM3PerSec = null;
-  } else {
-    result.realWorldBasePlusCritsM3PerSec =
-      MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-        miningAmount,
-        activationTime,
-        critChance,
-        critBonus,
-        0,
-        0,
-      );
-    result.realWorldEffectiveM3PerSec =
-      MiningCalculator.calculateRealWorldEffectiveM3PerSec(
-        miningAmount,
-        activationTime,
-        critChance,
-        critBonus,
-        residueProb,
-        residueMult,
-      );
-  }
 
   // Determine tier
   let tier = determineTier(result.m3PerSec, minerType);
