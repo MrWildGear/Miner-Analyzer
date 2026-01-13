@@ -1,5 +1,11 @@
 import type { AnalysisResult, MinerType } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 
 interface AnalysisDisplayProps {
@@ -200,62 +206,91 @@ export default function AnalysisDisplay({
 
         <div>
           <h3 className="font-semibold mb-2">Performance Metrics:</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead>
-                <tr className="border-b">
-                  <th className="text-left p-2">Metric</th>
-                  <th className="text-right p-2">Base</th>
-                  <th className="text-right p-2">Rolled</th>
-                  <th className="text-right p-2">% Change</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr className="border-b">
-                  <td className="p-2">Base M3/sec</td>
-                  <td className="text-right p-2">
-                    {baseM3PerSec.toFixed(2)}
-                  </td>
-                  <td
-                    className={`text-right p-2 ${
-                      baseM3Pct > 0 ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {analysis.m3PerSec.toFixed(2)}
-                  </td>
-                  <td
-                    className={`text-right p-2 ${
-                      baseM3Pct > 0 ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {baseM3Pct > 0 ? '+' : ''}
-                    {baseM3Pct.toFixed(1)}%
-                  </td>
-                </tr>
-                <tr className="border-b">
-                  <td className="p-2">Effective M3/sec</td>
-                  <td className="text-right p-2">
-                    {baseEffectiveM3PerSec.toFixed(2)}
-                  </td>
-                  <td
-                    className={`text-right p-2 ${
-                      effectiveM3Pct > 0 ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {analysis.effectiveM3PerSec.toFixed(2)}
-                  </td>
-                  <td
-                    className={`text-right p-2 ${
-                      effectiveM3Pct > 0 ? 'text-green-500' : 'text-red-500'
-                    }`}
-                  >
-                    {effectiveM3Pct > 0 ? '+' : ''}
-                    {effectiveM3Pct.toFixed(1)}%
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <TooltipProvider>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left p-2">Metric</th>
+                    <th className="text-right p-2">Base</th>
+                    <th className="text-right p-2">Rolled</th>
+                    <th className="text-right p-2">% Change</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="border-b">
+                    <td className="p-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help underline decoration-dotted">
+                            Base M3/sec
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-mono text-xs">
+                            MiningAmount / ActivationTime
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
+                    <td className="text-right p-2">
+                      {baseM3PerSec.toFixed(2)}
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        baseM3Pct > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}
+                    >
+                      {analysis.m3PerSec.toFixed(2)}
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        baseM3Pct > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}
+                    >
+                      {baseM3Pct > 0 ? '+' : ''}
+                      {baseM3Pct.toFixed(1)}%
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help underline decoration-dotted">
+                            Effective M3/sec
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-mono text-xs">
+                            (MiningAmount + (MiningAmount × CritBonus ×
+                            CritChance)) / ActivationTime
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
+                    <td className="text-right p-2">
+                      {baseEffectiveM3PerSec.toFixed(2)}
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        effectiveM3Pct > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}
+                    >
+                      {analysis.effectiveM3PerSec.toFixed(2)}
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        effectiveM3Pct > 0 ? 'text-green-500' : 'text-red-500'
+                      }`}
+                    >
+                      {effectiveM3Pct > 0 ? '+' : ''}
+                      {effectiveM3Pct.toFixed(1)}%
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>
