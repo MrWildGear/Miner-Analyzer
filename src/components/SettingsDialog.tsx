@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { openUrl } from '@/lib/utils/openUrl';
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,10 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Download, CheckCircle2, AlertCircle, RefreshCw } from 'lucide-react';
 import type { TierModifiers } from '@/types';
+import { APP_VERSION } from '@/version';
+import { useVersionCheck } from '@/hooks/useVersionCheck';
 
 interface SettingsDialogProps {
   open: boolean;
@@ -40,6 +44,7 @@ export default function SettingsDialog({
   const [localOptimalRangeModifier, setLocalOptimalRangeModifier] =
     useState(optimalRangeModifier.toString());
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const { result: versionCheck, isChecking: isCheckingVersion, checkForUpdates } = useVersionCheck(false);
 
   // Sync local state with props when dialog opens or props change
   useEffect(() => {
@@ -169,6 +174,79 @@ export default function SettingsDialog({
                 {errors.optimalRange}
               </p>
             )}
+          </div>
+
+          <div className="space-y-2 pt-4 border-t">
+            <Label>Version Information</Label>
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">Current Version:</span>
+                <span className="font-mono">v{APP_VERSION}</span>
+              </div>
+              {versionCheck && (
+                <>
+                  {versionCheck.latestVersion && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Latest Version:</span>
+                      <span className="font-mono">v{versionCheck.latestVersion}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 pt-2">
+                    {!versionCheck.isUpToDate && versionCheck.latestVersion && (
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={async () => {
+                          if (versionCheck.updateUrl) {
+                            await openUrl(versionCheck.updateUrl);
+                          }
+                        }}
+                        className="flex-1"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Update
+                      </Button>
+                    )}
+                    {versionCheck.isUpToDate && versionCheck.latestVersion && (
+                      <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 flex-1 justify-center">
+                        <CheckCircle2 className="h-4 w-4" />
+                        Up to date
+                      </div>
+                    )}
+                    {versionCheck.error && (
+                      <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400 flex-1 justify-center">
+                        <AlertCircle className="h-4 w-4" />
+                        {versionCheck.error}
+                      </div>
+                    )}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={checkForUpdates}
+                      disabled={isCheckingVersion}
+                    >
+                      <RefreshCw className={`h-4 w-4 ${isCheckingVersion ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                </>
+              )}
+              {!versionCheck && !isCheckingVersion && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={checkForUpdates}
+                  className="w-full"
+                >
+                  Check for Updates
+                </Button>
+              )}
+              {isCheckingVersion && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground justify-center py-2">
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                  Checking for updates...
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

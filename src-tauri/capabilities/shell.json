@@ -1,0 +1,8 @@
+{
+  "identifier": "shell-access",
+  "description": "Allows the main window to open external URLs",
+  "windows": ["main"],
+  "permissions": [
+    "shell:allow-open"
+  ]
+}

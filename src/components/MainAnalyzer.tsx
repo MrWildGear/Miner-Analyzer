@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, Download, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { MinerType, AnalysisResult } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -13,8 +13,11 @@ import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
 import ExportFormatDialog from './ExportFormatDialog';
+import UpdateAvailableDialog from './UpdateAvailableDialog';
 import { renderExportFormat } from '@/lib/export/formatRenderer';
 import { APP_VERSION } from '@/version';
+import { useVersionCheck } from '@/hooks/useVersionCheck';
+import { openUrl } from '@/lib/utils/openUrl';
 
 export default function MainAnalyzer() {
   const [minerType, setMinerType] = useState<MinerType>('ORE');
@@ -38,6 +41,42 @@ export default function MainAnalyzer() {
     // Default to dark mode if no preference saved
     return true;
   });
+
+  const { result: versionCheck, isChecking: isCheckingVersion, checkForUpdates } = useVersionCheck(true);
+  const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
+
+  // Show update dialog when an update is available
+  useEffect(() => {
+    if (versionCheck && !versionCheck.isUpToDate && versionCheck.latestVersion) {
+      // Only show dialog if we haven't shown it for this version yet
+      const lastShownVersion = localStorage.getItem('lastShownUpdateVersion');
+      const lastShownTime = localStorage.getItem('lastShownUpdateTime');
+      const now = Date.now();
+      const oneDay = 24 * 60 * 60 * 1000; // 24 hours
+      
+      // Show dialog if:
+      // 1. We haven't shown it for this version yet, OR
+      // 2. It's been more than 24 hours since we last showed it
+      const shouldShow = 
+        lastShownVersion !== versionCheck.latestVersion ||
+        !lastShownTime ||
+        (now - Number.parseInt(lastShownTime, 10)) > oneDay;
+      
+      if (shouldShow) {
+        console.log('Showing update available dialog for version:', versionCheck.latestVersion);
+        setUpdateDialogOpen(true);
+        localStorage.setItem('lastShownUpdateVersion', versionCheck.latestVersion);
+        localStorage.setItem('lastShownUpdateTime', now.toString());
+      } else {
+        console.log('Update dialog already shown for this version, skipping');
+      }
+    } else if (versionCheck && versionCheck.isUpToDate) {
+      // If we're up to date, close the dialog if it's open
+      if (updateDialogOpen) {
+        setUpdateDialogOpen(false);
+      }
+    }
+  }, [versionCheck, updateDialogOpen]);
 
   useEffect(() => {
     // Apply theme to document
@@ -163,7 +202,34 @@ export default function MainAnalyzer() {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle>EVE Online Strip Miner Roll Analyzer</CardTitle>
-            <span className="text-sm text-muted-foreground">v{APP_VERSION}</span>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">v{APP_VERSION}</span>
+              {versionCheck && !versionCheck.isUpToDate && versionCheck.latestVersion && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={async () => {
+                    if (versionCheck.updateUrl) {
+                      await openUrl(versionCheck.updateUrl);
+                    }
+                  }}
+                  className="text-xs"
+                  title={`Update available: v${versionCheck.latestVersion}`}
+                >
+                  <Download className="h-3 w-3 mr-1" />
+                  Update Available
+                </Button>
+              )}
+              {versionCheck && versionCheck.isUpToDate && versionCheck.latestVersion && (
+                <span className="text-xs text-muted-foreground flex items-center gap-1" title="You're using the latest version">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Up to date
+                </span>
+              )}
+              {isCheckingVersion && (
+                <span className="text-xs text-muted-foreground">Checking...</span>
+              )}
+            </div>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -242,6 +308,14 @@ export default function MainAnalyzer() {
         format={exportFormat}
         onSave={setExportFormat}
       />
+
+      {versionCheck && !versionCheck.isUpToDate && versionCheck.latestVersion && (
+        <UpdateAvailableDialog
+          open={updateDialogOpen}
+          onOpenChange={setUpdateDialogOpen}
+          versionCheck={versionCheck}
+        />
+      )}
     </div>
   );
 }
