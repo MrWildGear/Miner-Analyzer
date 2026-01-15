@@ -1,6 +1,10 @@
 import type { AnalysisResult, MinerType, BaseStats, TierRanges, SkillLevels } from '@/types';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
-import { getTierRanges, createLiveModifiers } from '@/lib/config/minerConfig';
+import {
+  applyModulatedCrystalModifiers,
+  getTierRanges,
+  createLiveModifiers,
+} from '@/lib/config/minerConfig';
 
 export function analyzeRoll(
   stats: Record<string, number>,
@@ -8,8 +12,10 @@ export function analyzeRoll(
   minerType: MinerType,
   skillLevels: SkillLevels,
 ): AnalysisResult {
+  const adjustedStats =
+    minerType === 'Modulated' ? applyModulatedCrystalModifiers(stats) : stats;
   const result: AnalysisResult = {
-    stats: { ...baseStats, ...stats },
+    stats: { ...baseStats, ...adjustedStats },
     m3PerSec: 0,
     basePlusCritsM3PerSec: null,
     effectiveM3PerSec: 0,

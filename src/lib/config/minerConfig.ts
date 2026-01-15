@@ -155,6 +155,31 @@ export const MINING_FOREMAN_BURST_CRIT_CHANCE =
   MINING_LASER_EFFICIENCY_CRIT_CHANCE_BONUS *
     MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER;
 
+const MODULATED_CRYSTAL_YIELD_MULTIPLIER = 1.8;
+const MODULATED_CRYSTAL_DURATION_MULTIPLIER = 0.8;
+const MODULATED_CRYSTAL_RESIDUE_PROBABILITY_BONUS = 0.3;
+const MODULATED_CRYSTAL_RESIDUE_VOLUME_MULTIPLIER_BONUS = 0;
+
+export function applyModulatedCrystalModifiers(
+  stats: Record<string, number>,
+): Record<string, number> {
+  const updated = { ...stats };
+  if (updated.MiningAmount !== undefined) {
+    updated.MiningAmount *= MODULATED_CRYSTAL_YIELD_MULTIPLIER;
+  }
+  if (updated.ActivationTime !== undefined) {
+    updated.ActivationTime *= MODULATED_CRYSTAL_DURATION_MULTIPLIER;
+  }
+  if (updated.ResidueProbability !== undefined) {
+    updated.ResidueProbability += MODULATED_CRYSTAL_RESIDUE_PROBABILITY_BONUS;
+  }
+  if (updated.ResidueVolumeMultiplier !== undefined) {
+    updated.ResidueVolumeMultiplier +=
+      MODULATED_CRYSTAL_RESIDUE_VOLUME_MULTIPLIER_BONUS;
+  }
+  return updated;
+}
+
 export function createLiveModifiers(skillLevels: SkillLevels) {
   const miningSkillYieldMultiplier =
     1 + skillLevels.mining * MINING_SKILL_YIELD_PER_LEVEL;
@@ -280,13 +305,13 @@ const ORE_TIER_RANGES: TierRanges = {
 };
 
 const MODULATED_TIER_RANGES: TierRanges = {
-  S: { min: 3.76188, max: 3.97 },
-  A: { min: 3.55376, max: 3.76188 },
-  B: { min: 3.34564, max: 3.55376 },
-  C: { min: 3.13752, max: 3.34564 },
-  D: { min: 2.9294, max: 3.13752 },
-  E: { min: 2.67, max: 2.9294 },
-  F: { min: 0, max: 2.67 },
+  S: { min: 8.46423, max: 8.9325 },
+  A: { min: 7.99596, max: 8.46423 },
+  B: { min: 7.52769, max: 7.99596 },
+  C: { min: 7.05942, max: 7.52769 },
+  D: { min: 6.59115, max: 7.05942 },
+  E: { min: 6.0075, max: 6.59115 },
+  F: { min: 0, max: 6.0075 },
 };
 
 const ICE_TIER_RANGES: TierRanges = {
@@ -307,7 +332,7 @@ export function getBaseStats(minerType: MinerType): BaseStats {
       return { ...ICE_BASE_STATS };
     case 'Modulated':
     default:
-      return { ...MODULATED_BASE_STATS };
+      return applyModulatedCrystalModifiers({ ...MODULATED_BASE_STATS });
   }
 }
 

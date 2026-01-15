@@ -34,9 +34,14 @@ const ROLL_ANALYSIS_STATS = [
   'CriticalSuccessBonusYield',
   'OptimalRange',
 ];
+const MODULATED_ONLY_STATS = ['ResidueProbability', 'ResidueVolumeMultiplier'];
 
 // Stats where lower is better (like ActivationTime)
-const LOWER_IS_BETTER_STATS = ['ActivationTime'];
+const LOWER_IS_BETTER_STATS = [
+  'ActivationTime',
+  'ResidueProbability',
+  'ResidueVolumeMultiplier',
+];
 
 // Format stat name for display
 function formatStatName(statName: string): string {
@@ -183,9 +188,10 @@ export default function AnalysisDisplay({
     );
 
   // Filter stats to display (only those in ROLL_ANALYSIS_STATS that exist)
-  const statsToDisplay = ROLL_ANALYSIS_STATS.filter(
-    (stat) => baseStats[stat] !== undefined,
-  );
+  const statsToDisplay = [
+    ...ROLL_ANALYSIS_STATS,
+    ...(minerType === 'Modulated' ? MODULATED_ONLY_STATS : []),
+  ].filter((stat) => baseStats[stat] !== undefined);
 
   // Performance metrics percentage calculations
   const baseM3Pct = calculatePercentage(baseM3PerSec, analysis.m3PerSec);
@@ -258,7 +264,7 @@ export default function AnalysisDisplay({
     },
     {
       key: 'LiveEffectiveM3PerSec',
-      label: 'Effective M3/sec',
+      label: 'Effective M3/sec (no residue)',
       base: liveBaseEffectiveM3PerSec,
       rolled: liveEffectiveM3PerSec,
       format: (value: number) => value.toFixed(2),
@@ -380,7 +386,7 @@ export default function AnalysisDisplay({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <span className="cursor-help underline decoration-dotted">
-                            Effective M3/sec
+                            Effective M3/sec (no residue)
                           </span>
                         </TooltipTrigger>
                         <TooltipContent>
@@ -410,6 +416,99 @@ export default function AnalysisDisplay({
                       {effectiveM3Pct.toFixed(1)}%
                     </td>
                   </tr>
+                  {minerType === 'Modulated' && (
+                    <tr className="border-b">
+                      <td className="p-2">Residue Probability</td>
+                      <td className="text-right p-2">
+                        {formatStatValue(baseResidueProb, 'ResidueProbability')}
+                      </td>
+                      <td
+                        className={`text-right p-2 ${
+                          calculatePercentage(
+                            baseResidueProb,
+                            rolledStats.ResidueProbability ?? baseResidueProb,
+                          ) < 0
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        {formatStatValue(
+                          rolledStats.ResidueProbability ?? baseResidueProb,
+                          'ResidueProbability',
+                        )}
+                      </td>
+                      <td
+                        className={`text-right p-2 ${
+                          calculatePercentage(
+                            baseResidueProb,
+                            rolledStats.ResidueProbability ?? baseResidueProb,
+                          ) < 0
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        {calculatePercentage(
+                          baseResidueProb,
+                          rolledStats.ResidueProbability ?? baseResidueProb,
+                        ) > 0
+                          ? '+'
+                          : ''}
+                        {calculatePercentage(
+                          baseResidueProb,
+                          rolledStats.ResidueProbability ?? baseResidueProb,
+                        ).toFixed(2)}
+                        %
+                      </td>
+                    </tr>
+                  )}
+                  {minerType === 'Modulated' && (
+                    <tr className="border-b">
+                      <td className="p-2">Residue Volume Multiplier</td>
+                      <td className="text-right p-2">
+                        {formatStatValue(
+                          baseResidueMult,
+                          'ResidueVolumeMultiplier',
+                        )}
+                      </td>
+                      <td
+                        className={`text-right p-2 ${
+                          calculatePercentage(
+                            baseResidueMult,
+                            rolledStats.ResidueVolumeMultiplier ?? baseResidueMult,
+                          ) < 0
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        {formatStatValue(
+                          rolledStats.ResidueVolumeMultiplier ?? baseResidueMult,
+                          'ResidueVolumeMultiplier',
+                        )}
+                      </td>
+                      <td
+                        className={`text-right p-2 ${
+                          calculatePercentage(
+                            baseResidueMult,
+                            rolledStats.ResidueVolumeMultiplier ?? baseResidueMult,
+                          ) < 0
+                            ? 'text-green-500'
+                            : 'text-red-500'
+                        }`}
+                      >
+                        {calculatePercentage(
+                          baseResidueMult,
+                          rolledStats.ResidueVolumeMultiplier ?? baseResidueMult,
+                        ) > 0
+                          ? '+'
+                          : ''}
+                        {calculatePercentage(
+                          baseResidueMult,
+                          rolledStats.ResidueVolumeMultiplier ?? baseResidueMult,
+                        ).toFixed(2)}
+                        %
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
