@@ -6,7 +6,6 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
 import { getBaseStats, getDefaultSkillLevels } from '@/lib/config/minerConfig';
@@ -15,6 +14,7 @@ import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
 import ExportFormatDialog from './ExportFormatDialog';
 import UpdateAvailableDialog from './UpdateAvailableDialog';
+import SkillLevelsDialog from './SkillLevelsDialog';
 import { renderExportFormat } from '@/lib/export/formatRenderer';
 import { APP_VERSION } from '@/version';
 import { useVersionCheck } from '@/hooks/useVersionCheck';
@@ -42,6 +42,7 @@ export default function MainAnalyzer() {
   });
   const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const [exportFormatOpen, setExportFormatOpen] = useState(false);
+  const [skillLevelsOpen, setSkillLevelsOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
   const [lastExportText, setLastExportText] = useState<string>('');
   const [exportFormat, setExportFormat] = useState<string>(() => {
@@ -170,6 +171,7 @@ export default function MainAnalyzer() {
             analysis: result,
             baseStats,
             minerType,
+            skillLevels,
           });
           await writeText(tierText);
           setLastExportText(tierText);
@@ -198,6 +200,7 @@ export default function MainAnalyzer() {
           analysis,
           baseStats,
           minerType,
+          skillLevels,
         });
         await writeText(tierText);
         setLastExportText(tierText);
@@ -214,21 +217,6 @@ export default function MainAnalyzer() {
     setAnalysis(null);
     setBaseStats({});
     setStatus('Miner type changed. Waiting for clipboard update...');
-  };
-
-  const handleSkillLevelChange = (
-    skillKey: keyof SkillLevels,
-    value: string,
-  ) => {
-    const parsed = Number.parseInt(value, 10);
-    if (Number.isNaN(parsed)) {
-      return;
-    }
-    const clamped = Math.min(5, Math.max(0, parsed));
-    setSkillLevels((prev) => ({
-      ...prev,
-      [skillKey]: clamped,
-    }));
   };
 
   return (
@@ -311,6 +299,12 @@ export default function MainAnalyzer() {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => setSkillLevelsOpen(true)}
+              >
+                Skill Levels
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setExportFormatOpen(true)}
               >
                 Export Format
@@ -319,106 +313,6 @@ export default function MainAnalyzer() {
           </div>
 
           <div className="text-sm text-muted-foreground">{status}</div>
-
-          <div className="space-y-2 pt-2 border-t">
-            <Label>Skill Levels</Label>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="skill-mining" className="text-xs">
-                  Mining
-                </Label>
-                <Input
-                  id="skill-mining"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.mining}
-                  onChange={(e) => handleSkillLevelChange('mining', e.target.value)}
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="skill-astrogeology" className="text-xs">
-                  Astrogeology
-                </Label>
-                <Input
-                  id="skill-astrogeology"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.astrogeology}
-                  onChange={(e) =>
-                    handleSkillLevelChange('astrogeology', e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="skill-mining-barge" className="text-xs">
-                  Mining Barge
-                </Label>
-                <Input
-                  id="skill-mining-barge"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.miningBarge}
-                  onChange={(e) =>
-                    handleSkillLevelChange('miningBarge', e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="skill-exhumers" className="text-xs">
-                  Exhumers
-                </Label>
-                <Input
-                  id="skill-exhumers"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.exhumers}
-                  onChange={(e) =>
-                    handleSkillLevelChange('exhumers', e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="skill-mining-exploitation" className="text-xs">
-                  Mining Exploitation
-                </Label>
-                <Input
-                  id="skill-mining-exploitation"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.miningExploitation}
-                  onChange={(e) =>
-                    handleSkillLevelChange('miningExploitation', e.target.value)
-                  }
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="skill-mining-precision" className="text-xs">
-                  Mining Precision
-                </Label>
-                <Input
-                  id="skill-mining-precision"
-                  type="number"
-                  min="0"
-                  max="5"
-                  step="1"
-                  value={skillLevels.miningPrecision}
-                  onChange={(e) =>
-                    handleSkillLevelChange('miningPrecision', e.target.value)
-                  }
-                />
-              </div>
-            </div>
-          </div>
         </CardContent>
       </Card>
 
@@ -443,6 +337,13 @@ export default function MainAnalyzer() {
         onOpenChange={setExportFormatOpen}
         format={exportFormat}
         onSave={setExportFormat}
+      />
+
+      <SkillLevelsDialog
+        open={skillLevelsOpen}
+        onOpenChange={setSkillLevelsOpen}
+        skillLevels={skillLevels}
+        onSave={setSkillLevels}
       />
 
       {versionCheck && !versionCheck.isUpToDate && versionCheck.latestVersion && (

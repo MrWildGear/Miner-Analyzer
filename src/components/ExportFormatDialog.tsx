@@ -34,6 +34,20 @@ const AVAILABLE_PLACEHOLDERS = [
   { value: '{CriticalSuccessBonusYield}', label: 'Crit Bonus' },
   { value: '{ResidueProbability}', label: 'Residue Probability' },
   { value: '{ResidueVolumeMultiplier}', label: 'Residue Volume Multiplier' },
+  { value: '{liveMiningAmount}', label: 'Live Mining Amount (rolled)' },
+  { value: '{liveMiningAmountPct}', label: 'Live Mining Amount % change' },
+  { value: '{liveActivationTime}', label: 'Live Activation Time (rolled)' },
+  { value: '{liveActivationTimePct}', label: 'Live Activation Time % change' },
+  { value: '{liveCriticalSuccessChance}', label: 'Live Crit Chance (rolled)' },
+  { value: '{liveCriticalSuccessChancePct}', label: 'Live Crit Chance % change' },
+  { value: '{liveCriticalSuccessBonusYield}', label: 'Live Crit Bonus (rolled)' },
+  { value: '{liveCriticalSuccessBonusYieldPct}', label: 'Live Crit Bonus % change' },
+  { value: '{liveOptimalRange}', label: 'Live Optimal Range (rolled)' },
+  { value: '{liveOptimalRangePct}', label: 'Live Optimal Range % change' },
+  { value: '{liveM3PerSec}', label: 'Live Base M3/sec (rolled)' },
+  { value: '{liveM3PerSecPct}', label: 'Live Base M3/sec % change' },
+  { value: '{liveEffectiveM3PerSec}', label: 'Live Effective M3/sec (rolled)' },
+  { value: '{liveEffectiveM3PerSecPct}', label: 'Live Effective M3/sec % change' },
 ];
 
 const DEFAULT_FORMAT = '{tier} : {m3Pct}% {optimalRangePct} {minerType}';
@@ -72,7 +86,21 @@ export default function ExportFormatDialog({
         .replace(/{CriticalSuccessChance}/g, '0.012')
         .replace(/{CriticalSuccessBonusYield}/g, '2.1')
         .replace(/{ResidueProbability}/g, '0.015')
-        .replace(/{ResidueVolumeMultiplier}/g, '0.5');
+        .replace(/{ResidueVolumeMultiplier}/g, '0.5')
+        .replace(/{liveMiningAmount}/g, '645.2')
+        .replace(/{liveMiningAmountPct}/g, '+03.4')
+        .replace(/{liveActivationTime}/g, '39.8')
+        .replace(/{liveActivationTimePct}/g, '-05.2')
+        .replace(/{liveCriticalSuccessChance}/g, '0.054')
+        .replace(/{liveCriticalSuccessChancePct}/g, '+06.1')
+        .replace(/{liveCriticalSuccessBonusYield}/g, '2.9')
+        .replace(/{liveCriticalSuccessBonusYieldPct}/g, '+04.2')
+        .replace(/{liveOptimalRange}/g, '65.4')
+        .replace(/{liveOptimalRangePct}/g, '+10.5%')
+        .replace(/{liveM3PerSec}/g, '16.1')
+        .replace(/{liveM3PerSecPct}/g, '+12.3')
+        .replace(/{liveEffectiveM3PerSec}/g, '18.8')
+        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7');
       setPreview(samplePreview);
     }
   }, [open, format]);
@@ -94,7 +122,21 @@ export default function ExportFormatDialog({
         .replace(/{CriticalSuccessChance}/g, '0.012')
         .replace(/{CriticalSuccessBonusYield}/g, '2.1')
         .replace(/{ResidueProbability}/g, '0.015')
-        .replace(/{ResidueVolumeMultiplier}/g, '0.5').length;
+        .replace(/{ResidueVolumeMultiplier}/g, '0.5')
+        .replace(/{liveMiningAmount}/g, '645.2')
+        .replace(/{liveMiningAmountPct}/g, '+03.4')
+        .replace(/{liveActivationTime}/g, '39.8')
+        .replace(/{liveActivationTimePct}/g, '-05.2')
+        .replace(/{liveCriticalSuccessChance}/g, '0.054')
+        .replace(/{liveCriticalSuccessChancePct}/g, '+06.1')
+        .replace(/{liveCriticalSuccessBonusYield}/g, '2.9')
+        .replace(/{liveCriticalSuccessBonusYieldPct}/g, '+04.2')
+        .replace(/{liveOptimalRange}/g, '65.4')
+        .replace(/{liveOptimalRangePct}/g, '+10.5%')
+        .replace(/{liveM3PerSec}/g, '16.1')
+        .replace(/{liveM3PerSecPct}/g, '+12.3')
+        .replace(/{liveEffectiveM3PerSec}/g, '18.8')
+        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7').length;
 
     if (sampleLength > 100) {
       setError(`Format too long (${sampleLength} chars, max 100)`);
@@ -117,7 +159,21 @@ export default function ExportFormatDialog({
       .replace(/{CriticalSuccessChance}/g, '0.012')
       .replace(/{CriticalSuccessBonusYield}/g, '2.1')
       .replace(/{ResidueProbability}/g, '0.015')
-      .replace(/{ResidueVolumeMultiplier}/g, '0.5');
+      .replace(/{ResidueVolumeMultiplier}/g, '0.5')
+      .replace(/{liveMiningAmount}/g, '645.2')
+      .replace(/{liveMiningAmountPct}/g, '+03.4')
+      .replace(/{liveActivationTime}/g, '39.8')
+      .replace(/{liveActivationTimePct}/g, '-05.2')
+      .replace(/{liveCriticalSuccessChance}/g, '0.054')
+      .replace(/{liveCriticalSuccessChancePct}/g, '+06.1')
+      .replace(/{liveCriticalSuccessBonusYield}/g, '2.9')
+      .replace(/{liveCriticalSuccessBonusYieldPct}/g, '+04.2')
+      .replace(/{liveOptimalRange}/g, '65.4')
+      .replace(/{liveOptimalRangePct}/g, '+10.5%')
+      .replace(/{liveM3PerSec}/g, '16.1')
+      .replace(/{liveM3PerSecPct}/g, '+12.3')
+      .replace(/{liveEffectiveM3PerSec}/g, '18.8')
+      .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7');
     setPreview(samplePreview);
   };
 
