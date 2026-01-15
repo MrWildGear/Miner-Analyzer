@@ -6,4 +6,4 @@
  * - package.json (version field)
  * - src-tauri/tauri.conf.json (version field)
  */
-export const APP_VERSION = '2.0.14';
+export const APP_VERSION = '2.1.0';
