@@ -142,7 +142,12 @@ export default function MainAnalyzer() {
         const baseStats = getBaseStats(minerType);
         setBaseStats(baseStats);
         try {
-          const result = analyzeRoll(parsedStats, baseStats, minerType);
+          const result = analyzeRoll(
+            parsedStats,
+            baseStats,
+            minerType,
+            skillLevels,
+          );
           setAnalysis(result);
 
           // Calculate base values for both metrics
@@ -190,7 +195,15 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, lastExportText, exportFormat]);
+  }, [minerType, lastClipboardHash, lastExportText, exportFormat, skillLevels]);
+
+  useEffect(() => {
+    if (!analysis || Object.keys(baseStats).length === 0) {
+      return;
+    }
+    const updated = analyzeRoll(analysis.stats, baseStats, minerType, skillLevels);
+    setAnalysis(updated);
+  }, [skillLevels]);
 
   // Recalculate export when format, toggle, or analysis changes
   useEffect(() => {

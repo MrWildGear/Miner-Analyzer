@@ -270,13 +270,13 @@ const ICE_BASE_STATS: BaseStats = {
 };
 
 const ORE_TIER_RANGES: TierRanges = {
-  S: { min: 6.27, max: 6.61 },
-  A: { min: 5.92, max: 6.27 },
-  B: { min: 5.57, max: 5.92 },
-  C: { min: 5.23, max: 5.57 },
-  D: { min: 4.88, max: 5.23 },
-  E: { min: 4.44, max: 4.88 },
-  F: { min: 0, max: 4.44 },
+  S: { min: 84.5, max: 89.7 },
+  A: { min: 79.2, max: 84.5 },
+  B: { min: 73.9, max: 79.2 },
+  C: { min: 68.6, max: 73.9 },
+  D: { min: 63.4, max: 68.6 },
+  E: { min: 58.0, max: 63.4 },
+  F: { min: 0, max: 58.0 },
 };
 
 const MODULATED_TIER_RANGES: TierRanges = {

@@ -1,11 +1,12 @@
-import type { AnalysisResult, MinerType, BaseStats, TierRanges } from '@/types';
+import type { AnalysisResult, MinerType, BaseStats, TierRanges, SkillLevels } from '@/types';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
-import { getTierRanges } from '@/lib/config/minerConfig';
+import { getTierRanges, createLiveModifiers } from '@/lib/config/minerConfig';
 
 export function analyzeRoll(
   stats: Record<string, number>,
   baseStats: BaseStats,
   minerType: MinerType,
+  skillLevels: SkillLevels,
 ): AnalysisResult {
   const result: AnalysisResult = {
     stats: { ...baseStats, ...stats },
@@ -71,8 +72,14 @@ export function analyzeRoll(
   }
 
 
-  // Determine tier
-  let tier = determineTier(result.m3PerSec, minerType);
+  const liveEffectiveM3PerSec = calculateLiveEffectiveM3PerSec(
+    result.stats,
+    minerType,
+    skillLevels,
+  );
+
+  // Determine tier using live effective performance
+  let tier = determineTier(liveEffectiveM3PerSec, minerType);
 
   // Check if optimal range is increased and add "+" suffix for tiers above F
   const rolledOptimalRange = result.stats.OptimalRange;
@@ -91,20 +98,71 @@ export function analyzeRoll(
   return result;
 }
 
+function combineMultipliers(multipliers: number[]): number {
+  if (multipliers.length === 0) {
+    return 1;
+  }
+  return multipliers.reduce((acc, value) => acc * value, 1);
+}
+
+function calculateLiveEffectiveM3PerSec(
+  stats: Record<string, number>,
+  minerType: MinerType,
+  skillLevels: SkillLevels,
+): number {
+  const liveModifiers = createLiveModifiers(skillLevels);
+  const miningAmount =
+    (stats.MiningAmount ?? 0) * combineMultipliers(liveModifiers.yield);
+  const activationTime =
+    (stats.ActivationTime ?? 0) * combineMultipliers(liveModifiers.cycleTime);
+  const critChance =
+    (stats.CriticalSuccessChance ?? 0) *
+    combineMultipliers(liveModifiers.critChance);
+  const critBonus =
+    (stats.CriticalSuccessBonusYield ?? 0) *
+    combineMultipliers(liveModifiers.critBonus);
+  const residueProb =
+    (stats.ResidueProbability ?? 0) *
+    combineMultipliers(liveModifiers.residueProbability);
+  const residueMult =
+    (stats.ResidueVolumeMultiplier ?? 0) *
+    combineMultipliers(liveModifiers.residueVolumeMultiplier);
+
+  if (minerType === 'ORE' || minerType === 'Ice') {
+    return MiningCalculator.calculateEffectiveM3PerSec(
+      miningAmount,
+      activationTime,
+      critChance,
+      critBonus,
+      0,
+      0,
+    );
+  }
+
+  return MiningCalculator.calculateEffectiveM3PerSec(
+    miningAmount,
+    activationTime,
+    critChance,
+    critBonus,
+    residueProb,
+    residueMult,
+  );
+}
+
 function determineTier(m3PerSec: number, minerType: MinerType): string {
   const tierRanges = getTierRanges(minerType);
 
-  // Check tier S (special case: only needs Min)
+  // Check tier S
   const sRange = tierRanges.S;
-  if (sRange && isInSRange(m3PerSec, sRange)) {
+  if (sRange && isInRange(m3PerSec, sRange)) {
     return 'S';
   }
 
-  // Check tiers A-E (need both Min and Max)
+  // Check tiers A-E
   const standardTiers: Array<keyof TierRanges> = ['A', 'B', 'C', 'D', 'E'];
   for (const tier of standardTiers) {
     const range = tierRanges[tier];
-    if (range && isInStandardRange(m3PerSec, range)) {
+    if (range && isInRange(m3PerSec, range)) {
       return tier as string;
     }
   }
@@ -113,15 +171,17 @@ function determineTier(m3PerSec: number, minerType: MinerType): string {
   return 'F';
 }
 
-function isInSRange(value: number, range: { min: number; max?: number }): boolean {
-  return range.min !== undefined && value >= range.min;
-}
-
-function isInStandardRange(
+function isInRange(
   value: number,
-  range: { min: number; max: number },
+  range: { min: number; max?: number },
 ): boolean {
   const min = range.min;
   const max = range.max;
-  return min !== undefined && max !== undefined && value >= min && value < max;
+  if (min === undefined) {
+    return false;
+  }
+  if (max === undefined) {
+    return value >= min;
+  }
+  return value >= min && value < max;
 }
