@@ -1,12 +1,225 @@
-import type { BaseStats, TierRanges, MinerType } from '@/types';
+import type { BaseStats, TierRanges, MinerType, SkillLevels } from '@/types';
 
 // Bonus constants
-export const SHIP_ROLE_BONUS = 1.75;
-export const MODULE_BONUS = 1.15;
-export const MINING_FOREMAN_BURST_YIELD = 1.15;
-export const INDUSTRIAL_CORE_YIELD = 1.5;
+export const SHIP_ROLE_BONUS = 1;
+export const MODULE_BONUS = 1;
+export const MINING_FOREMAN_BURST_MODULE_STRENGTH_BONUS = 0.25;
+export const CAPITAL_INDUSTRIAL_CORE_BURST_STRENGTH_BONUS = 0.4;
+export const CAPITAL_INDUSTRIAL_SHIPS_BURST_STRENGTH_BONUS_PER_LEVEL = 0.05;
+export const CAPITAL_INDUSTRIAL_SHIPS_SKILL_LEVEL = 5;
+export const INDUSTRIAL_CORE_YIELD = 1;
 export const INDUSTRIAL_CORE_CYCLE_TIME = 0.75;
-export const CALIBRATION_MULTIPLIER = 1.35;
+export const CALIBRATION_MULTIPLIER = 1;
+export const SKILL_YIELD_MULTIPLIER = 1;
+export const SKILL_CYCLE_TIME_MULTIPLIER = 1;
+export const SKILL_RANGE_MULTIPLIER = 1;
+export const HIGHWALL_MINING_YIELD_BONUS = 0.03;
+export const IMPLANT_YIELD_MULTIPLIER = 1 + HIGHWALL_MINING_YIELD_BONUS;
+export const IMPLANT_CYCLE_TIME_MULTIPLIER = 1;
+export const IMPLANT_RANGE_MULTIPLIER = 1;
+
+export const MINING_FOREMAN_SKILL_LEVEL = 5;
+export const MINING_FOREMAN_BURST_STRENGTH_BONUS_PER_LEVEL = 0.1;
+export const MINING_DIRECTOR_SKILL_LEVEL = 5;
+export const MINING_DIRECTOR_BURST_STRENGTH_BONUS_PER_LEVEL = 0.15;
+export const COMMAND_BURST_SPECIALIST_SKILL_LEVEL = 5;
+export const COMMAND_BURST_SPECIALIST_STRENGTH_BONUS_PER_LEVEL = 0.1;
+
+export const DEFAULT_SKILL_LEVEL = 5;
+export function getDefaultSkillLevels(): SkillLevels {
+  return {
+    mining: DEFAULT_SKILL_LEVEL,
+    astrogeology: DEFAULT_SKILL_LEVEL,
+    miningBarge: DEFAULT_SKILL_LEVEL,
+    exhumers: DEFAULT_SKILL_LEVEL,
+    miningExploitation: DEFAULT_SKILL_LEVEL,
+    miningPrecision: DEFAULT_SKILL_LEVEL,
+  };
+}
+
+const MINING_SKILL_YIELD_PER_LEVEL = 0.05;
+const ASTROGEOLOGY_YIELD_PER_LEVEL = 0.05;
+const MINING_BARGE_YIELD_PER_LEVEL = 0.03;
+const MINING_BARGE_RANGE_PER_LEVEL = 0.06;
+const EXHUMERS_YIELD_PER_LEVEL = 0.06;
+const EXHUMERS_STRIP_MINER_DURATION_REDUCTION_PER_LEVEL = 0.03;
+const MINING_EXPLOITATION_CRIT_BONUS_PER_LEVEL = 0.05;
+const MINING_PRECISION_CRIT_CHANCE_PER_LEVEL = 0.1;
+
+const HULK_ROLE_STRIP_MINER_CYCLE_TIME = 0.85;
+
+const MINING_LASER_UPGRADE_II_YIELD_BONUS = 0.09;
+const MINING_LASER_UPGRADE_II_COUNT = 3;
+const APPLY_STACKING_PENALTY = false;
+
+const MINING_SURVEY_CHIPSET_II_COUNT = 1;
+const MINING_SURVEY_CHIPSET_II_CRIT_CHANCE = 1.2;
+const MINING_SURVEY_CHIPSET_II_CRIT_BONUS = 1.2;
+const MINING_SURVEY_CHIPSET_II_RESIDUE = 0.8;
+
+const MINING_LASER_EFFICIENCY_CRIT_CHANCE_BONUS = 0.5;
+const MINING_LASER_EFFICIENCY_RESIDUE_REDUCTION = 0.15;
+const MINING_LASER_FIELD_ENHANCEMENT_RANGE_BONUS = 0.4;
+const MINING_LASER_OPTIMIZATION_DURATION_REDUCTION = 0.15;
+const MINING_EQUIPMENT_PRESERVATION_RESIDUE_REDUCTION = 0.15;
+const MINING_FOREMAN_MINDLINK_BONUS = 0.25;
+
+const STACKING_PENALTY_FACTORS = [
+  1,
+  0.86911998,
+  0.57058314,
+  0.28295515,
+  0.10599265,
+  0.02999426,
+  0.00640399,
+  0.001,
+];
+
+function applyStackingPenalties(bonuses: number[]): number[] {
+  const sorted = [...bonuses].sort(
+    (a, b) => Math.abs(b) - Math.abs(a),
+  );
+  return sorted.map((bonus, index) => {
+    const penalty = STACKING_PENALTY_FACTORS[index] ?? 0;
+    return bonus * penalty;
+  });
+}
+
+const MINING_LASER_UPGRADE_II_MULTIPLIERS = (
+  APPLY_STACKING_PENALTY
+    ? applyStackingPenalties(
+        Array.from(
+          { length: MINING_LASER_UPGRADE_II_COUNT },
+          () => MINING_LASER_UPGRADE_II_YIELD_BONUS,
+        ),
+      )
+    : Array.from(
+        { length: MINING_LASER_UPGRADE_II_COUNT },
+        () => MINING_LASER_UPGRADE_II_YIELD_BONUS,
+      )
+).map((bonus) => 1 + bonus);
+const MINING_SURVEY_CHIPSET_II_CRIT_CHANCE_MULTIPLIERS = Array.from(
+  { length: MINING_SURVEY_CHIPSET_II_COUNT },
+  () => MINING_SURVEY_CHIPSET_II_CRIT_CHANCE,
+);
+const MINING_SURVEY_CHIPSET_II_CRIT_BONUS_MULTIPLIERS = Array.from(
+  { length: MINING_SURVEY_CHIPSET_II_COUNT },
+  () => MINING_SURVEY_CHIPSET_II_CRIT_BONUS,
+);
+const MINING_SURVEY_CHIPSET_II_RESIDUE_MULTIPLIERS = Array.from(
+  { length: MINING_SURVEY_CHIPSET_II_COUNT },
+  () => MINING_SURVEY_CHIPSET_II_RESIDUE,
+);
+
+const MINING_FOREMAN_BURST_STRENGTH_BONUS =
+  MINING_FOREMAN_BURST_MODULE_STRENGTH_BONUS +
+  MINING_FOREMAN_MINDLINK_BONUS +
+  CAPITAL_INDUSTRIAL_CORE_BURST_STRENGTH_BONUS +
+  CAPITAL_INDUSTRIAL_SHIPS_SKILL_LEVEL *
+    CAPITAL_INDUSTRIAL_SHIPS_BURST_STRENGTH_BONUS_PER_LEVEL +
+  MINING_FOREMAN_SKILL_LEVEL * MINING_FOREMAN_BURST_STRENGTH_BONUS_PER_LEVEL +
+  MINING_DIRECTOR_SKILL_LEVEL * MINING_DIRECTOR_BURST_STRENGTH_BONUS_PER_LEVEL +
+  COMMAND_BURST_SPECIALIST_SKILL_LEVEL *
+    COMMAND_BURST_SPECIALIST_STRENGTH_BONUS_PER_LEVEL;
+
+const MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER =
+  1 + MINING_FOREMAN_BURST_STRENGTH_BONUS;
+
+export const MINING_FOREMAN_BURST_CYCLE_TIME = Math.max(
+  0,
+  1 -
+    MINING_LASER_OPTIMIZATION_DURATION_REDUCTION *
+      MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER,
+);
+export const MINING_FOREMAN_BURST_RANGE =
+  1 +
+  MINING_LASER_FIELD_ENHANCEMENT_RANGE_BONUS *
+    MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER;
+export const MINING_FOREMAN_BURST_RESIDUE = Math.max(
+  0,
+  1 -
+    MINING_LASER_EFFICIENCY_RESIDUE_REDUCTION *
+      MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER,
+);
+export const MINING_FOREMAN_BURST_CRYSTAL_VOLATILITY = Math.max(
+  0,
+  1 -
+    MINING_EQUIPMENT_PRESERVATION_RESIDUE_REDUCTION *
+      MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER,
+);
+export const MINING_FOREMAN_BURST_CRIT_CHANCE =
+  1 +
+  MINING_LASER_EFFICIENCY_CRIT_CHANCE_BONUS *
+    MINING_FOREMAN_BURST_STRENGTH_MULTIPLIER;
+
+export function createLiveModifiers(skillLevels: SkillLevels) {
+  const miningSkillYieldMultiplier =
+    1 + skillLevels.mining * MINING_SKILL_YIELD_PER_LEVEL;
+  const astrogeologyYieldMultiplier =
+    1 + skillLevels.astrogeology * ASTROGEOLOGY_YIELD_PER_LEVEL;
+  const miningBargeYieldMultiplier =
+    1 + skillLevels.miningBarge * MINING_BARGE_YIELD_PER_LEVEL;
+  const miningBargeRangeMultiplier =
+    1 + skillLevels.miningBarge * MINING_BARGE_RANGE_PER_LEVEL;
+  const exhumersYieldMultiplier =
+    1 + skillLevels.exhumers * EXHUMERS_YIELD_PER_LEVEL;
+  const exhumersStripMinerDurationMultiplier = Math.max(
+    0,
+    1 -
+      skillLevels.exhumers *
+        EXHUMERS_STRIP_MINER_DURATION_REDUCTION_PER_LEVEL,
+  );
+  const miningExploitationCritBonusMultiplier =
+    1 +
+    skillLevels.miningExploitation * MINING_EXPLOITATION_CRIT_BONUS_PER_LEVEL;
+  const miningPrecisionCritChanceMultiplier =
+    1 + skillLevels.miningPrecision * MINING_PRECISION_CRIT_CHANCE_PER_LEVEL;
+
+  return {
+    yield: [
+      SHIP_ROLE_BONUS,
+      MODULE_BONUS,
+      INDUSTRIAL_CORE_YIELD,
+      CALIBRATION_MULTIPLIER,
+      miningSkillYieldMultiplier,
+      astrogeologyYieldMultiplier,
+      miningBargeYieldMultiplier,
+      exhumersYieldMultiplier,
+      ...MINING_LASER_UPGRADE_II_MULTIPLIERS,
+      SKILL_YIELD_MULTIPLIER,
+      IMPLANT_YIELD_MULTIPLIER,
+    ],
+    cycleTime: [
+      HULK_ROLE_STRIP_MINER_CYCLE_TIME,
+      exhumersStripMinerDurationMultiplier,
+      INDUSTRIAL_CORE_CYCLE_TIME,
+      MINING_FOREMAN_BURST_CYCLE_TIME,
+      SKILL_CYCLE_TIME_MULTIPLIER,
+      IMPLANT_CYCLE_TIME_MULTIPLIER,
+    ],
+    range: [
+      MINING_FOREMAN_BURST_RANGE,
+      miningBargeRangeMultiplier,
+      SKILL_RANGE_MULTIPLIER,
+      IMPLANT_RANGE_MULTIPLIER,
+    ],
+    critChance: [
+      MINING_FOREMAN_BURST_CRIT_CHANCE,
+      miningPrecisionCritChanceMultiplier,
+      ...MINING_SURVEY_CHIPSET_II_CRIT_CHANCE_MULTIPLIERS,
+    ],
+    critBonus: [
+      miningExploitationCritBonusMultiplier,
+      ...MINING_SURVEY_CHIPSET_II_CRIT_BONUS_MULTIPLIERS,
+    ],
+    residueProbability: [
+      MINING_FOREMAN_BURST_RESIDUE,
+      MINING_FOREMAN_BURST_CRYSTAL_VOLATILITY,
+      ...MINING_SURVEY_CHIPSET_II_RESIDUE_MULTIPLIERS,
+    ],
+    residueVolumeMultiplier: [],
+  };
+}
 
 const ORE_BASE_STATS: BaseStats = {
   ActivationCost: 23,

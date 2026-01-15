@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Moon, Sun, Download, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { MinerType, AnalysisResult } from '@/types';
+import type { MinerType, AnalysisResult, SkillLevels } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
-import { getBaseStats } from '@/lib/config/minerConfig';
+import { getBaseStats, getDefaultSkillLevels } from '@/lib/config/minerConfig';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
@@ -24,6 +25,21 @@ export default function MainAnalyzer() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [baseStats, setBaseStats] = useState<Record<string, number>>({});
   const [status, setStatus] = useState('Monitoring clipboard...');
+  const [skillLevels, setSkillLevels] = useState<SkillLevels>(() => {
+    const saved = localStorage.getItem('skillLevels');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as SkillLevels;
+        return {
+          ...getDefaultSkillLevels(),
+          ...parsed,
+        };
+      } catch {
+        return getDefaultSkillLevels();
+      }
+    }
+    return getDefaultSkillLevels();
+  });
   const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const [exportFormatOpen, setExportFormatOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
@@ -94,6 +110,10 @@ export default function MainAnalyzer() {
     // Save export format
     localStorage.setItem('exportFormat', exportFormat);
   }, [exportFormat]);
+
+  useEffect(() => {
+    localStorage.setItem('skillLevels', JSON.stringify(skillLevels));
+  }, [skillLevels]);
 
   useEffect(() => {
     // Clipboard monitoring
@@ -196,6 +216,21 @@ export default function MainAnalyzer() {
     setStatus('Miner type changed. Waiting for clipboard update...');
   };
 
+  const handleSkillLevelChange = (
+    skillKey: keyof SkillLevels,
+    value: string,
+  ) => {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    const clamped = Math.min(5, Math.max(0, parsed));
+    setSkillLevels((prev) => ({
+      ...prev,
+      [skillKey]: clamped,
+    }));
+  };
+
   return (
     <div className="flex flex-col h-screen">
       <Card className="m-4">
@@ -284,6 +319,106 @@ export default function MainAnalyzer() {
           </div>
 
           <div className="text-sm text-muted-foreground">{status}</div>
+
+          <div className="space-y-2 pt-2 border-t">
+            <Label>Skill Levels</Label>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="skill-mining" className="text-xs">
+                  Mining
+                </Label>
+                <Input
+                  id="skill-mining"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.mining}
+                  onChange={(e) => handleSkillLevelChange('mining', e.target.value)}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="skill-astrogeology" className="text-xs">
+                  Astrogeology
+                </Label>
+                <Input
+                  id="skill-astrogeology"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.astrogeology}
+                  onChange={(e) =>
+                    handleSkillLevelChange('astrogeology', e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="skill-mining-barge" className="text-xs">
+                  Mining Barge
+                </Label>
+                <Input
+                  id="skill-mining-barge"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.miningBarge}
+                  onChange={(e) =>
+                    handleSkillLevelChange('miningBarge', e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="skill-exhumers" className="text-xs">
+                  Exhumers
+                </Label>
+                <Input
+                  id="skill-exhumers"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.exhumers}
+                  onChange={(e) =>
+                    handleSkillLevelChange('exhumers', e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="skill-mining-exploitation" className="text-xs">
+                  Mining Exploitation
+                </Label>
+                <Input
+                  id="skill-mining-exploitation"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.miningExploitation}
+                  onChange={(e) =>
+                    handleSkillLevelChange('miningExploitation', e.target.value)
+                  }
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="skill-mining-precision" className="text-xs">
+                  Mining Precision
+                </Label>
+                <Input
+                  id="skill-mining-precision"
+                  type="number"
+                  min="0"
+                  max="5"
+                  step="1"
+                  value={skillLevels.miningPrecision}
+                  onChange={(e) =>
+                    handleSkillLevelChange('miningPrecision', e.target.value)
+                  }
+                />
+              </div>
+            </div>
+          </div>
         </CardContent>
       </Card>
 
@@ -293,6 +428,7 @@ export default function MainAnalyzer() {
             analysis={analysis}
             baseStats={baseStats}
             minerType={minerType}
+            skillLevels={skillLevels}
           />
         </div>
       )}
