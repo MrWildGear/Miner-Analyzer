@@ -30,6 +30,20 @@ export function renderExportFormat(
   const baseCritBonus = baseStats.CriticalSuccessBonusYield ?? 0;
   const baseResidueProb = baseStats.ResidueProbability ?? 0;
   const baseResidueMult = baseStats.ResidueVolumeMultiplier ?? 0;
+  const baseEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      baseCritChance,
+      baseCritBonus,
+      baseResidueProb,
+      baseResidueMult,
+    );
+  const rolledEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      analysis.stats.CriticalSuccessChance ?? 0,
+      analysis.stats.CriticalSuccessBonusYield ?? 0,
+      analysis.stats.ResidueProbability ?? 0,
+      analysis.stats.ResidueVolumeMultiplier ?? 0,
+    );
 
   const baseBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
     baseMiningAmount,
@@ -136,6 +150,20 @@ export function renderExportFormat(
   const liveBaseOptimalRange = liveBaseStats.OptimalRange ?? 0;
   const liveBaseResidueProb = liveBaseStats.ResidueProbability ?? 0;
   const liveBaseResidueMult = liveBaseStats.ResidueVolumeMultiplier ?? 0;
+  const liveBaseEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      liveBaseCritChance,
+      liveBaseCritBonus,
+      liveBaseResidueProb,
+      liveBaseResidueMult,
+    );
+  const liveEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      liveCritChance,
+      liveCritBonus,
+      liveResidueProb,
+      liveResidueMult,
+    );
 
   const liveM3PerSec = MiningCalculator.calculateBaseM3PerSec(
     liveMiningAmount,
@@ -187,6 +215,10 @@ export function renderExportFormat(
     '{effectiveM3Pct}': formatPercentage(effectiveM3Pct),
     '{m3PerSec}': analysis.m3PerSec.toFixed(2),
     '{effectiveM3PerSec}': analysis.effectiveM3PerSec.toFixed(2),
+    '{effectiveMiningPct}': rolledEffectiveMiningPct.toFixed(2),
+    '{effectiveMiningPctChange}': formatPercentage(
+      calculatePercentage(baseEffectiveMiningPct, rolledEffectiveMiningPct),
+    ),
     '{optimalRangePct}': optimalRangePct || '',
     '{optimalRange}': rolledOptimalRange?.toFixed(2) || '',
     '{minerType}': minerType,
@@ -223,6 +255,10 @@ export function renderExportFormat(
     '{liveEffectiveM3PerSec}': liveEffectiveM3PerSec.toFixed(2),
     '{liveEffectiveM3PerSecPct}': formatPercentage(
       calculatePercentage(liveBaseEffectiveM3PerSec, liveEffectiveM3PerSec),
+    ),
+    '{liveEffectiveMiningPct}': liveEffectiveMiningPct.toFixed(2),
+    '{liveEffectiveMiningPctChange}': formatPercentage(
+      calculatePercentage(liveBaseEffectiveMiningPct, liveEffectiveMiningPct),
     ),
   };
 

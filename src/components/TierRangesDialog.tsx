@@ -20,43 +20,43 @@ const TIER_RANGES = [
   {
     tier: 'S',
     ore: '84.5 - 89.7 m³/s',
-    modulated: '8.46423 - 8.9325+ m³/s',
+    modulated: '109.4 - 121.0+ m³/s',
     ice: '7.033 - 7.44+ m³/s',
   },
   {
     tier: 'A',
     ore: '79.2 - 84.5 m³/s',
-    modulated: '7.99596 - 8.46423 m³/s',
+    modulated: '97.8 - 109.4 m³/s',
     ice: '6.627 - 7.033 m³/s',
   },
   {
     tier: 'B',
     ore: '73.9 - 79.2 m³/s',
-    modulated: '7.52769 - 7.99596 m³/s',
+    modulated: '86.2 - 97.8 m³/s',
     ice: '6.220 - 6.627 m³/s',
   },
   {
     tier: 'C',
     ore: '68.6 - 73.9 m³/s',
-    modulated: '7.05942 - 7.52769 m³/s',
+    modulated: '74.6 - 86.2 m³/s',
     ice: '5.813 - 6.220 m³/s',
   },
   {
     tier: 'D',
     ore: '63.4 - 68.6 m³/s',
-    modulated: '6.59115 - 7.05942 m³/s',
+    modulated: '63.1 - 74.6 m³/s',
     ice: '5.407 - 5.813 m³/s',
   },
   {
     tier: 'E',
     ore: '58.0 - 63.4 m³/s',
-    modulated: '6.0075 - 6.59115 m³/s',
+    modulated: '51.5 - 63.1 m³/s',
     ice: '5.000 - 5.407 m³/s',
   },
   {
     tier: 'F',
     ore: '< 58.0 m³/s',
-    modulated: '< 6.0075 m³/s',
+    modulated: '< 51.5 m³/s',
     ice: '< 5.000 m³/s',
   },
 ];
@@ -91,7 +91,7 @@ export default function TierRangesDialog({
                 <tr className="border-b">
                   <th className="text-left p-3 font-semibold">Tier</th>
                   <th className="text-right p-3 font-semibold">ORE Strip Miner</th>
-      <th className="text-right p-3 font-semibold line-through opacity-60">
+                  <th className="text-right p-3 font-semibold">
         Modulated Strip Miner II
       </th>
       <th className="text-right p-3 font-semibold line-through opacity-60">
@@ -106,7 +106,7 @@ export default function TierRangesDialog({
                       {range.tier}
                     </td>
                     <td className="text-right p-3">{range.ore}</td>
-    <td className="text-right p-3 line-through opacity-60">
+    <td className="text-right p-3">
       {range.modulated}
     </td>
     <td className="text-right p-3 line-through opacity-60">

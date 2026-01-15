@@ -241,7 +241,6 @@ export function createLiveModifiers(skillLevels: SkillLevels) {
     ],
     residueProbability: [
       MINING_FOREMAN_BURST_RESIDUE,
-      MINING_FOREMAN_BURST_CRYSTAL_VOLATILITY,
       ...MINING_SURVEY_CHIPSET_II_RESIDUE_MULTIPLIERS,
     ],
     residueVolumeMultiplier: [],
@@ -305,13 +304,13 @@ const ORE_TIER_RANGES: TierRanges = {
 };
 
 const MODULATED_TIER_RANGES: TierRanges = {
-  S: { min: 8.46423, max: 8.9325 },
-  A: { min: 7.99596, max: 8.46423 },
-  B: { min: 7.52769, max: 7.99596 },
-  C: { min: 7.05942, max: 7.52769 },
-  D: { min: 6.59115, max: 7.05942 },
-  E: { min: 6.0075, max: 6.59115 },
-  F: { min: 0, max: 6.0075 },
+  S: { min: 109.4, max: 121.0 },
+  A: { min: 97.8, max: 109.4 },
+  B: { min: 86.2, max: 97.8 },
+  C: { min: 74.6, max: 86.2 },
+  D: { min: 63.1, max: 74.6 },
+  E: { min: 51.5, max: 63.1 },
+  F: { min: 0, max: 51.5 },
 };
 
 const ICE_TIER_RANGES: TierRanges = {

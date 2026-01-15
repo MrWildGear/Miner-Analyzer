@@ -19,35 +19,62 @@ interface ExportFormatDialogProps {
   onSave: (format: string) => void;
 }
 
-const AVAILABLE_PLACEHOLDERS = [
-  { value: '{tier}', label: 'Tier (A, B, C, etc.)' },
-  { value: '{m3Pct}', label: 'Base M3/sec % change' },
-  { value: '{effectiveM3Pct}', label: 'Effective M3/sec % change' },
-  { value: '{m3PerSec}', label: 'Base M3/sec value' },
-  { value: '{effectiveM3PerSec}', label: 'Effective M3/sec value' },
-  { value: '{optimalRangePct}', label: 'Optimal Range % change' },
-  { value: '{optimalRange}', label: 'Optimal Range value' },
-  { value: '{minerType}', label: 'Miner Type (ORE/Modulated/Ice)' },
-  { value: '{MiningAmount}', label: 'Mining Amount' },
-  { value: '{ActivationTime}', label: 'Activation Time' },
-  { value: '{CriticalSuccessChance}', label: 'Crit Chance' },
-  { value: '{CriticalSuccessBonusYield}', label: 'Crit Bonus' },
-  { value: '{ResidueProbability}', label: 'Residue Probability' },
-  { value: '{ResidueVolumeMultiplier}', label: 'Residue Volume Multiplier' },
-  { value: '{liveMiningAmount}', label: 'Live Mining Amount (rolled)' },
-  { value: '{liveMiningAmountPct}', label: 'Live Mining Amount % change' },
-  { value: '{liveActivationTime}', label: 'Live Activation Time (rolled)' },
-  { value: '{liveActivationTimePct}', label: 'Live Activation Time % change' },
-  { value: '{liveCriticalSuccessChance}', label: 'Live Crit Chance (rolled)' },
-  { value: '{liveCriticalSuccessChancePct}', label: 'Live Crit Chance % change' },
-  { value: '{liveCriticalSuccessBonusYield}', label: 'Live Crit Bonus (rolled)' },
-  { value: '{liveCriticalSuccessBonusYieldPct}', label: 'Live Crit Bonus % change' },
-  { value: '{liveOptimalRange}', label: 'Live Optimal Range (rolled)' },
-  { value: '{liveOptimalRangePct}', label: 'Live Optimal Range % change' },
-  { value: '{liveM3PerSec}', label: 'Live Base M3/sec (rolled)' },
-  { value: '{liveM3PerSecPct}', label: 'Live Base M3/sec % change' },
-  { value: '{liveEffectiveM3PerSec}', label: 'Live Effective M3/sec (rolled)' },
-  { value: '{liveEffectiveM3PerSecPct}', label: 'Live Effective M3/sec % change' },
+const PLACEHOLDER_GROUPS = [
+  {
+    title: 'General',
+    placeholders: [
+      { value: '{tier}', label: 'Tier (A, B, C, etc.)' },
+      { value: '{minerType}', label: 'Miner Type (ORE/Modulated/Ice)' },
+    ],
+  },
+  {
+    title: 'Roll Analysis',
+    placeholders: [
+      { value: '{MiningAmount}', label: 'Mining Amount' },
+      { value: '{ActivationTime}', label: 'Activation Time' },
+      { value: '{CriticalSuccessChance}', label: 'Crit Chance' },
+      { value: '{CriticalSuccessBonusYield}', label: 'Crit Bonus' },
+      { value: '{ResidueProbability}', label: 'Residue Probability' },
+      { value: '{ResidueVolumeMultiplier}', label: 'Residue Volume Multiplier' },
+      { value: '{optimalRange}', label: 'Optimal Range value' },
+      { value: '{optimalRangePct}', label: 'Optimal Range % change' },
+    ],
+  },
+  {
+    title: 'Performance Metrics',
+    placeholders: [
+      { value: '{m3PerSec}', label: 'Base M3/sec value' },
+      { value: '{m3Pct}', label: 'Base M3/sec % change' },
+      { value: '{effectiveM3PerSec}', label: 'Effective M3/sec value' },
+      { value: '{effectiveM3Pct}', label: 'Effective M3/sec % change' },
+      { value: '{effectiveMiningPct}', label: 'Effective Mining % (rolled)' },
+      { value: '{effectiveMiningPctChange}', label: 'Effective Mining % change' },
+    ],
+  },
+  {
+    title: 'Live Performance Metrics',
+    placeholders: [
+      { value: '{liveMiningAmount}', label: 'Live Mining Amount (rolled)' },
+      { value: '{liveMiningAmountPct}', label: 'Live Mining Amount % change' },
+      { value: '{liveActivationTime}', label: 'Live Activation Time (rolled)' },
+      { value: '{liveActivationTimePct}', label: 'Live Activation Time % change' },
+      { value: '{liveCriticalSuccessChance}', label: 'Live Crit Chance (rolled)' },
+      { value: '{liveCriticalSuccessChancePct}', label: 'Live Crit Chance % change' },
+      { value: '{liveCriticalSuccessBonusYield}', label: 'Live Crit Bonus (rolled)' },
+      { value: '{liveCriticalSuccessBonusYieldPct}', label: 'Live Crit Bonus % change' },
+      { value: '{liveOptimalRange}', label: 'Live Optimal Range (rolled)' },
+      { value: '{liveOptimalRangePct}', label: 'Live Optimal Range % change' },
+      { value: '{liveM3PerSec}', label: 'Live Base M3/sec (rolled)' },
+      { value: '{liveM3PerSecPct}', label: 'Live Base M3/sec % change' },
+      { value: '{liveEffectiveM3PerSec}', label: 'Live Effective M3/sec (rolled)' },
+      { value: '{liveEffectiveM3PerSecPct}', label: 'Live Effective M3/sec % change' },
+      { value: '{liveEffectiveMiningPct}', label: 'Live Effective Mining % (rolled)' },
+      {
+        value: '{liveEffectiveMiningPctChange}',
+        label: 'Live Effective Mining % change',
+      },
+    ],
+  },
 ];
 
 const DEFAULT_FORMAT = '{tier} : {m3Pct}% {optimalRangePct} {minerType}';
@@ -78,6 +105,8 @@ export default function ExportFormatDialog({
         .replace(/{effectiveM3Pct}/g, '+35.2')
         .replace(/{m3PerSec}/g, '12.5')
         .replace(/{effectiveM3PerSec}/g, '13.2')
+        .replace(/{effectiveMiningPct}/g, '97.31')
+        .replace(/{effectiveMiningPctChange}/g, '+01.2')
         .replace(/{optimalRangePct}/g, '+05.2%')
         .replace(/{optimalRange}/g, '19.5')
         .replace(/{minerType}/g, 'ORE')
@@ -100,7 +129,9 @@ export default function ExportFormatDialog({
         .replace(/{liveM3PerSec}/g, '16.1')
         .replace(/{liveM3PerSecPct}/g, '+12.3')
         .replace(/{liveEffectiveM3PerSec}/g, '18.8')
-        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7');
+        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
+        .replace(/{liveEffectiveMiningPct}/g, '96.4')
+        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0');
       setPreview(samplePreview);
     }
   }, [open, format]);
@@ -114,6 +145,8 @@ export default function ExportFormatDialog({
       .replace(/{effectiveM3Pct}/g, '+35.2')
       .replace(/{m3PerSec}/g, '12.5')
       .replace(/{effectiveM3PerSec}/g, '13.2')
+      .replace(/{effectiveMiningPct}/g, '97.31')
+      .replace(/{effectiveMiningPctChange}/g, '+01.2')
       .replace(/{optimalRangePct}/g, '-04.2%')
       .replace(/{optimalRange}/g, '19.5')
       .replace(/{minerType}/g, 'ORE')
@@ -136,7 +169,9 @@ export default function ExportFormatDialog({
         .replace(/{liveM3PerSec}/g, '16.1')
         .replace(/{liveM3PerSecPct}/g, '+12.3')
         .replace(/{liveEffectiveM3PerSec}/g, '18.8')
-        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7').length;
+        .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
+        .replace(/{liveEffectiveMiningPct}/g, '96.4')
+        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0').length;
 
     if (sampleLength > 100) {
       setError(`Format too long (${sampleLength} chars, max 100)`);
@@ -151,6 +186,8 @@ export default function ExportFormatDialog({
       .replace(/{effectiveM3Pct}/g, '+35.2')
       .replace(/{m3PerSec}/g, '12.5')
       .replace(/{effectiveM3PerSec}/g, '13.2')
+      .replace(/{effectiveMiningPct}/g, '97.31')
+      .replace(/{effectiveMiningPctChange}/g, '+01.2')
       .replace(/{optimalRangePct}/g, '-04.2%')
       .replace(/{optimalRange}/g, '19.5')
       .replace(/{minerType}/g, 'ORE')
@@ -173,7 +210,9 @@ export default function ExportFormatDialog({
       .replace(/{liveM3PerSec}/g, '16.1')
       .replace(/{liveM3PerSecPct}/g, '+12.3')
       .replace(/{liveEffectiveM3PerSec}/g, '18.8')
-      .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7');
+      .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
+      .replace(/{liveEffectiveMiningPct}/g, '96.4')
+      .replace(/{liveEffectiveMiningPctChange}/g, '-01.0');
     setPreview(samplePreview);
   };
 
@@ -285,28 +324,41 @@ export default function ExportFormatDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Available Placeholders (Click)</Label>
-            <div className="grid grid-cols-3 gap-2">
-              {AVAILABLE_PLACEHOLDERS.map((placeholder) => (
-                <Button
-                  key={placeholder.value}
-                  variant="outline"
-                  draggable
-                  onDragStart={(e) => handleDragStart(e, placeholder.value)}
-                  onClick={() => {
-                    const textarea = document.getElementById('export-format') as HTMLTextAreaElement;
-                    const position = textarea?.selectionStart ?? localFormat.length;
-                    handleInsertPlaceholder(placeholder.value, position);
-                  }}
-                  className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent overflow-hidden"
+            <Label>Available Placeholders</Label>
+            <div className="space-y-2">
+              {PLACEHOLDER_GROUPS.map((group) => (
+                <details
+                  key={group.title}
+                  className="rounded border border-border bg-muted/20"
+                  open={group.title === 'General'}
                 >
-                  <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 break-all">
-                    {placeholder.value}
-                  </code>
-                  <span className="text-xs text-muted-foreground leading-tight wrap-break-word w-full">
-                    {placeholder.label}
-                  </span>
-                </Button>
+                  <summary className="cursor-pointer px-3 py-2 font-semibold">
+                    {group.title}
+                  </summary>
+                  <div className="grid grid-cols-3 gap-2 px-3 pb-3 pt-1">
+                    {group.placeholders.map((placeholder) => (
+                      <Button
+                        key={placeholder.value}
+                        variant="outline"
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, placeholder.value)}
+                        onClick={() => {
+                          const textarea = document.getElementById('export-format') as HTMLTextAreaElement;
+                          const position = textarea?.selectionStart ?? localFormat.length;
+                          handleInsertPlaceholder(placeholder.value, position);
+                        }}
+                        className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent overflow-hidden"
+                      >
+                        <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 break-all">
+                          {placeholder.value}
+                        </code>
+                        <span className="text-xs text-muted-foreground leading-tight wrap-break-word w-full">
+                          {placeholder.label}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                </details>
               ))}
             </div>
           </div>

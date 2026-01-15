@@ -186,6 +186,20 @@ export default function AnalysisDisplay({
       baseResidueProb,
       baseResidueMult,
     );
+  const baseEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      baseCritChance,
+      baseCritBonus,
+      baseResidueProb,
+      baseResidueMult,
+    );
+  const rolledEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      rolledStats.CriticalSuccessChance ?? 0,
+      rolledStats.CriticalSuccessBonusYield ?? 0,
+      rolledStats.ResidueProbability ?? 0,
+      rolledStats.ResidueVolumeMultiplier ?? 0,
+    );
 
   // Filter stats to display (only those in ROLL_ANALYSIS_STATS that exist)
   const statsToDisplay = [
@@ -198,6 +212,10 @@ export default function AnalysisDisplay({
   const effectiveM3Pct = calculatePercentage(
     baseEffectiveM3PerSec,
     analysis.effectiveM3PerSec,
+  );
+  const effectiveMiningPct = calculatePercentage(
+    baseEffectiveMiningPct,
+    rolledEffectiveMiningPct,
   );
 
   const liveModifiers = createLiveModifiers(skillLevels);
@@ -242,6 +260,20 @@ export default function AnalysisDisplay({
     liveResidueProb,
     liveResidueMult,
   );
+  const liveBaseEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      liveBaseCritChance,
+      liveBaseCritBonus,
+      liveBaseResidueProb,
+      liveBaseResidueMult,
+    );
+  const liveEffectiveMiningPct =
+    MiningCalculator.calculateEffectiveMiningPercent(
+      liveCritChance,
+      liveCritBonus,
+      liveResidueProb,
+      liveResidueMult,
+    );
 
   const liveRows = [
     ...statsToDisplay.map((statName) => ({
@@ -270,6 +302,16 @@ export default function AnalysisDisplay({
       format: (value: number) => value.toFixed(2),
       tooltip:
         '(MiningAmount + (MiningAmount × CritBonus × CritChance)) / ActivationTime',
+      statName: null as string | null,
+    },
+    {
+      key: 'LiveEffectiveMiningM3PerSec',
+      label: 'Effective Mining',
+      base: liveBaseEffectiveMiningPct,
+      rolled: liveEffectiveMiningPct,
+      format: (value: number) => `${value.toFixed(2)}%`,
+      tooltip:
+        '((1 + (CritBonus × CritChance)) / (1 + (ResidueProbability × ResidueVolumeMultiplier))) × 100',
       statName: null as string | null,
     },
   ];
@@ -414,6 +456,46 @@ export default function AnalysisDisplay({
                     >
                       {effectiveM3Pct > 0 ? '+' : ''}
                       {effectiveM3Pct.toFixed(1)}%
+                    </td>
+                  </tr>
+                  <tr className="border-b">
+                    <td className="p-2">
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="cursor-help underline decoration-dotted">
+                            Effective Mining
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="font-mono text-xs">
+                            ((1 + (CritBonus × CritChance)) /
+                            (1 + (ResidueProbability × ResidueVolumeMultiplier))) × 100
+                          </p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </td>
+                    <td className="text-right p-2">
+                      {baseEffectiveMiningPct.toFixed(2)}%
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        effectiveMiningPct > 0
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {rolledEffectiveMiningPct.toFixed(2)}%
+                    </td>
+                    <td
+                      className={`text-right p-2 ${
+                        effectiveMiningPct > 0
+                          ? 'text-green-500'
+                          : 'text-red-500'
+                      }`}
+                    >
+                      {effectiveMiningPct > 0 ? '+' : ''}
+                      {effectiveMiningPct.toFixed(1)}
+                      %
                     </td>
                   </tr>
                   {minerType === 'Modulated' && (
