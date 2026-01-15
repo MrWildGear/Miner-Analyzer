@@ -1,10 +1,12 @@
-import type { AnalysisResult, MinerType } from '@/types';
+import type { AnalysisResult, MinerType, SkillLevels } from '@/types';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
+import { createLiveModifiers } from '@/lib/config/minerConfig';
 
 interface FormatContext {
   analysis: AnalysisResult;
   baseStats: Record<string, number>;
   minerType: MinerType;
+  skillLevels: SkillLevels;
 }
 
 /**
@@ -18,6 +20,7 @@ export function renderExportFormat(
     analysis,
     baseStats,
     minerType,
+    skillLevels,
   } = context;
 
   // Calculate base values
@@ -60,6 +63,106 @@ export function renderExportFormat(
     return sign + absValue.toFixed(1);
   };
 
+  const calculatePercentage = (base: number, rolled: number): number => {
+    if (base === 0) return 0;
+    return ((rolled - base) / base) * 100;
+  };
+
+  const combineMultipliers = (multipliers: number[]): number => {
+    if (multipliers.length === 0) {
+      return 1;
+    }
+    return multipliers.reduce((acc, value) => acc * value, 1);
+  };
+
+  const getLiveMultiplierForStat = (
+    statName: string,
+    liveModifiers: ReturnType<typeof createLiveModifiers>,
+  ): number => {
+    switch (statName) {
+      case 'MiningAmount':
+        return combineMultipliers(liveModifiers.yield);
+      case 'ActivationTime':
+        return combineMultipliers(liveModifiers.cycleTime);
+      case 'OptimalRange':
+        return combineMultipliers(liveModifiers.range);
+      case 'CriticalSuccessChance':
+        return combineMultipliers(liveModifiers.critChance);
+      case 'CriticalSuccessBonusYield':
+        return combineMultipliers(liveModifiers.critBonus);
+      case 'ResidueProbability':
+        return combineMultipliers(liveModifiers.residueProbability);
+      case 'ResidueVolumeMultiplier':
+        return combineMultipliers(liveModifiers.residueVolumeMultiplier);
+      default:
+        return 1;
+    }
+  };
+
+  const applyLiveModifiersToStats = (
+    stats: Record<string, number>,
+    liveModifiers: ReturnType<typeof createLiveModifiers>,
+  ): Record<string, number> => {
+    const liveStats: Record<string, number> = { ...stats };
+    for (const [statName, value] of Object.entries(stats)) {
+      if (typeof value !== 'number') {
+        continue;
+      }
+      const multiplier = getLiveMultiplierForStat(statName, liveModifiers);
+      liveStats[statName] = value * multiplier;
+    }
+    return liveStats;
+  };
+
+  const liveModifiers = createLiveModifiers(skillLevels);
+  const liveBaseStats = applyLiveModifiersToStats(baseStats, liveModifiers);
+  const liveRolledStats = applyLiveModifiersToStats(
+    analysis.stats,
+    liveModifiers,
+  );
+
+  const liveMiningAmount = liveRolledStats.MiningAmount ?? 0;
+  const liveActivationTime = liveRolledStats.ActivationTime ?? 0;
+  const liveCritChance = liveRolledStats.CriticalSuccessChance ?? 0;
+  const liveCritBonus = liveRolledStats.CriticalSuccessBonusYield ?? 0;
+  const liveOptimalRange = liveRolledStats.OptimalRange ?? 0;
+  const liveResidueProb = liveRolledStats.ResidueProbability ?? 0;
+  const liveResidueMult = liveRolledStats.ResidueVolumeMultiplier ?? 0;
+
+  const liveBaseMiningAmount = liveBaseStats.MiningAmount ?? 0;
+  const liveBaseActivationTime = liveBaseStats.ActivationTime ?? 0;
+  const liveBaseCritChance = liveBaseStats.CriticalSuccessChance ?? 0;
+  const liveBaseCritBonus = liveBaseStats.CriticalSuccessBonusYield ?? 0;
+  const liveBaseOptimalRange = liveBaseStats.OptimalRange ?? 0;
+  const liveBaseResidueProb = liveBaseStats.ResidueProbability ?? 0;
+  const liveBaseResidueMult = liveBaseStats.ResidueVolumeMultiplier ?? 0;
+
+  const liveM3PerSec = MiningCalculator.calculateBaseM3PerSec(
+    liveMiningAmount,
+    liveActivationTime,
+  );
+  const liveBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
+    liveBaseMiningAmount,
+    liveBaseActivationTime,
+  );
+  const liveEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+    liveMiningAmount,
+    liveActivationTime,
+    liveCritChance,
+    liveCritBonus,
+    liveResidueProb,
+    liveResidueMult,
+  );
+  const liveBaseEffectiveM3PerSec =
+    MiningCalculator.calculateEffectiveM3PerSec(
+      liveBaseMiningAmount,
+      liveBaseActivationTime,
+      liveBaseCritChance,
+      liveBaseCritBonus,
+      liveBaseResidueProb,
+      liveBaseResidueMult,
+    );
+
   // Calculate optimal range percentage if available
   const rolledOptimalRange = analysis.stats.OptimalRange;
   const baseOptimalRange = baseStats.OptimalRange;
@@ -93,6 +196,34 @@ export function renderExportFormat(
     '{CriticalSuccessBonusYield}': (analysis.stats.CriticalSuccessBonusYield ?? 0).toFixed(1),
     '{ResidueProbability}': (analysis.stats.ResidueProbability ?? 0).toFixed(3),
     '{ResidueVolumeMultiplier}': (analysis.stats.ResidueVolumeMultiplier ?? 0).toFixed(2),
+    '{liveMiningAmount}': liveMiningAmount.toFixed(1),
+    '{liveMiningAmountPct}': formatPercentage(
+      calculatePercentage(liveBaseMiningAmount, liveMiningAmount),
+    ),
+    '{liveActivationTime}': liveActivationTime.toFixed(1),
+    '{liveActivationTimePct}': formatPercentage(
+      calculatePercentage(liveBaseActivationTime, liveActivationTime),
+    ),
+    '{liveCriticalSuccessChance}': liveCritChance.toFixed(3),
+    '{liveCriticalSuccessChancePct}': formatPercentage(
+      calculatePercentage(liveBaseCritChance, liveCritChance),
+    ),
+    '{liveCriticalSuccessBonusYield}': liveCritBonus.toFixed(1),
+    '{liveCriticalSuccessBonusYieldPct}': formatPercentage(
+      calculatePercentage(liveBaseCritBonus, liveCritBonus),
+    ),
+    '{liveOptimalRange}': liveOptimalRange.toFixed(2),
+    '{liveOptimalRangePct}': formatPercentage(
+      calculatePercentage(liveBaseOptimalRange, liveOptimalRange),
+    ),
+    '{liveM3PerSec}': liveM3PerSec.toFixed(2),
+    '{liveM3PerSecPct}': formatPercentage(
+      calculatePercentage(liveBaseM3PerSec, liveM3PerSec),
+    ),
+    '{liveEffectiveM3PerSec}': liveEffectiveM3PerSec.toFixed(2),
+    '{liveEffectiveM3PerSecPct}': formatPercentage(
+      calculatePercentage(liveBaseEffectiveM3PerSec, liveEffectiveM3PerSec),
+    ),
   };
 
   // Replace all placeholders

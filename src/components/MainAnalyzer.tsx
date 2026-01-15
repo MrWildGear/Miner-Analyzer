@@ -1,19 +1,20 @@
 import { useState, useEffect } from 'react';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { Moon, Sun, Download, CheckCircle2, AlertCircle } from 'lucide-react';
-import type { MinerType, AnalysisResult } from '@/types';
+import type { MinerType, AnalysisResult, SkillLevels } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
-import { getBaseStats } from '@/lib/config/minerConfig';
+import { getBaseStats, getDefaultSkillLevels } from '@/lib/config/minerConfig';
 import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
 import ExportFormatDialog from './ExportFormatDialog';
 import UpdateAvailableDialog from './UpdateAvailableDialog';
+import SkillLevelsDialog from './SkillLevelsDialog';
 import { renderExportFormat } from '@/lib/export/formatRenderer';
 import { APP_VERSION } from '@/version';
 import { useVersionCheck } from '@/hooks/useVersionCheck';
@@ -24,8 +25,24 @@ export default function MainAnalyzer() {
   const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
   const [baseStats, setBaseStats] = useState<Record<string, number>>({});
   const [status, setStatus] = useState('Monitoring clipboard...');
+  const [skillLevels, setSkillLevels] = useState<SkillLevels>(() => {
+    const saved = localStorage.getItem('skillLevels');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved) as SkillLevels;
+        return {
+          ...getDefaultSkillLevels(),
+          ...parsed,
+        };
+      } catch {
+        return getDefaultSkillLevels();
+      }
+    }
+    return getDefaultSkillLevels();
+  });
   const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const [exportFormatOpen, setExportFormatOpen] = useState(false);
+  const [skillLevelsOpen, setSkillLevelsOpen] = useState(false);
   const [lastClipboardHash, setLastClipboardHash] = useState<string>('');
   const [lastExportText, setLastExportText] = useState<string>('');
   const [exportFormat, setExportFormat] = useState<string>(() => {
@@ -96,6 +113,10 @@ export default function MainAnalyzer() {
   }, [exportFormat]);
 
   useEffect(() => {
+    localStorage.setItem('skillLevels', JSON.stringify(skillLevels));
+  }, [skillLevels]);
+
+  useEffect(() => {
     // Clipboard monitoring
     const interval = setInterval(async () => {
       try {
@@ -121,7 +142,12 @@ export default function MainAnalyzer() {
         const baseStats = getBaseStats(minerType);
         setBaseStats(baseStats);
         try {
-          const result = analyzeRoll(parsedStats, baseStats, minerType);
+          const result = analyzeRoll(
+            parsedStats,
+            baseStats,
+            minerType,
+            skillLevels,
+          );
           setAnalysis(result);
 
           // Calculate base values for both metrics
@@ -150,6 +176,7 @@ export default function MainAnalyzer() {
             analysis: result,
             baseStats,
             minerType,
+            skillLevels,
           });
           await writeText(tierText);
           setLastExportText(tierText);
@@ -168,7 +195,15 @@ export default function MainAnalyzer() {
     }, 300);
 
     return () => clearInterval(interval);
-  }, [minerType, lastClipboardHash, lastExportText, exportFormat]);
+  }, [minerType, lastClipboardHash, lastExportText, exportFormat, skillLevels]);
+
+  useEffect(() => {
+    if (!analysis || Object.keys(baseStats).length === 0) {
+      return;
+    }
+    const updated = analyzeRoll(analysis.stats, baseStats, minerType, skillLevels);
+    setAnalysis(updated);
+  }, [skillLevels]);
 
   // Recalculate export when format, toggle, or analysis changes
   useEffect(() => {
@@ -178,6 +213,7 @@ export default function MainAnalyzer() {
           analysis,
           baseStats,
           minerType,
+          skillLevels,
         });
         await writeText(tierText);
         setLastExportText(tierText);
@@ -276,6 +312,12 @@ export default function MainAnalyzer() {
               </Button>
               <Button
                 variant="outline"
+                onClick={() => setSkillLevelsOpen(true)}
+              >
+                Skill Levels
+              </Button>
+              <Button
+                variant="outline"
                 onClick={() => setExportFormatOpen(true)}
               >
                 Export Format
@@ -293,6 +335,7 @@ export default function MainAnalyzer() {
             analysis={analysis}
             baseStats={baseStats}
             minerType={minerType}
+            skillLevels={skillLevels}
           />
         </div>
       )}
@@ -307,6 +350,13 @@ export default function MainAnalyzer() {
         onOpenChange={setExportFormatOpen}
         format={exportFormat}
         onSave={setExportFormat}
+      />
+
+      <SkillLevelsDialog
+        open={skillLevelsOpen}
+        onOpenChange={setSkillLevelsOpen}
+        skillLevels={skillLevels}
+        onSave={setSkillLevels}
       />
 
       {versionCheck && !versionCheck.isUpToDate && versionCheck.latestVersion && (

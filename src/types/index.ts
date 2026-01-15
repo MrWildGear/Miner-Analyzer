@@ -30,3 +30,12 @@ export interface TierModifiers {
   E: number;
   F: number;
 }
+
+export interface SkillLevels {
+  mining: number;
+  astrogeology: number;
+  miningBarge: number;
+  exhumers: number;
+  miningExploitation: number;
+  miningPrecision: number;
+}
