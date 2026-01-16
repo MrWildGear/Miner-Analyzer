@@ -82,6 +82,9 @@ export function renderExportFormat(
     return ((rolled - base) / base) * 100;
   };
 
+  const normalizeRangeValue = (value: number): number =>
+    value > 1000 ? value / 1000 : value;
+
   const combineMultipliers = (multipliers: number[]): number => {
     if (multipliers.length === 0) {
       return 1;
@@ -128,7 +131,7 @@ export function renderExportFormat(
     return liveStats;
   };
 
-  const liveModifiers = createLiveModifiers(skillLevels);
+  const liveModifiers = createLiveModifiers(minerType, skillLevels);
   const liveBaseStats = applyLiveModifiersToStats(baseStats, liveModifiers);
   const liveRolledStats = applyLiveModifiersToStats(
     analysis.stats,
@@ -139,7 +142,9 @@ export function renderExportFormat(
   const liveActivationTime = liveRolledStats.ActivationTime ?? 0;
   const liveCritChance = liveRolledStats.CriticalSuccessChance ?? 0;
   const liveCritBonus = liveRolledStats.CriticalSuccessBonusYield ?? 0;
-  const liveOptimalRange = liveRolledStats.OptimalRange ?? 0;
+  const liveOptimalRange = normalizeRangeValue(
+    liveRolledStats.OptimalRange ?? 0,
+  );
   const liveResidueProb = liveRolledStats.ResidueProbability ?? 0;
   const liveResidueMult = liveRolledStats.ResidueVolumeMultiplier ?? 0;
 
@@ -147,7 +152,9 @@ export function renderExportFormat(
   const liveBaseActivationTime = liveBaseStats.ActivationTime ?? 0;
   const liveBaseCritChance = liveBaseStats.CriticalSuccessChance ?? 0;
   const liveBaseCritBonus = liveBaseStats.CriticalSuccessBonusYield ?? 0;
-  const liveBaseOptimalRange = liveBaseStats.OptimalRange ?? 0;
+  const liveBaseOptimalRange = normalizeRangeValue(
+    liveBaseStats.OptimalRange ?? 0,
+  );
   const liveBaseResidueProb = liveBaseStats.ResidueProbability ?? 0;
   const liveBaseResidueMult = liveBaseStats.ResidueVolumeMultiplier ?? 0;
   const liveBaseEffectiveMiningPct =
@@ -194,13 +201,24 @@ export function renderExportFormat(
   // Calculate optimal range percentage if available
   const rolledOptimalRange = analysis.stats.OptimalRange;
   const baseOptimalRange = baseStats.OptimalRange;
+  const normalizedRolledOptimalRange =
+    rolledOptimalRange !== undefined
+      ? normalizeRangeValue(rolledOptimalRange)
+      : undefined;
+  const normalizedBaseOptimalRange =
+    baseOptimalRange !== undefined
+      ? normalizeRangeValue(baseOptimalRange)
+      : undefined;
   let optimalRangePct: string | null = null;
   if (
-    rolledOptimalRange !== undefined &&
-    baseOptimalRange !== undefined &&
-    baseOptimalRange > 0
+    normalizedRolledOptimalRange !== undefined &&
+    normalizedBaseOptimalRange !== undefined &&
+    normalizedBaseOptimalRange > 0
   ) {
-    const optimalRangePctValue = ((rolledOptimalRange - baseOptimalRange) / baseOptimalRange) * 100;
+    const optimalRangePctValue =
+      ((normalizedRolledOptimalRange - normalizedBaseOptimalRange) /
+        normalizedBaseOptimalRange) *
+      100;
     const formatted = formatPercentage(optimalRangePctValue);
     optimalRangePct = `${formatted}%`;
   }
@@ -220,7 +238,7 @@ export function renderExportFormat(
       calculatePercentage(baseEffectiveMiningPct, rolledEffectiveMiningPct),
     ),
     '{optimalRangePct}': optimalRangePct || '',
-    '{optimalRange}': rolledOptimalRange?.toFixed(2) || '',
+    '{optimalRange}': normalizedRolledOptimalRange?.toFixed(2) || '',
     '{minerType}': minerType,
     '{MiningAmount}': analysis.stats.MiningAmount?.toFixed(0) || '',
     '{ActivationTime}': analysis.stats.ActivationTime?.toFixed(1) || '',

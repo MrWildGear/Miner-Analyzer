@@ -80,12 +80,17 @@ function formatStatValue(value: number, statName: string): string {
     return value.toFixed(1) + ' m³';
   }
   if (statName === 'OptimalRange') {
-    return value.toFixed(2) + ' km';
+    const normalized = value > 1000 ? value / 1000 : value;
+    return normalized.toFixed(2) + ' km';
   }
   if (statName === 'ResidueProbability') {
     return (value * 100).toFixed(2) + '%';
   }
   return value.toFixed(2);
+}
+
+function normalizeRangeValue(value: number): number {
+  return value > 1000 ? value / 1000 : value;
 }
 
 // Calculate percentage difference
@@ -218,7 +223,7 @@ export default function AnalysisDisplay({
     rolledEffectiveMiningPct,
   );
 
-  const liveModifiers = createLiveModifiers(skillLevels);
+  const liveModifiers = createLiveModifiers(minerType, skillLevels);
   const liveBaseStats = applyLiveModifiersToStats(baseStats, liveModifiers);
   const liveRolledStats = applyLiveModifiersToStats(rolledStats, liveModifiers);
 
@@ -343,7 +348,13 @@ export default function AnalysisDisplay({
                 {statsToDisplay.map((statName) => {
                   const base = baseStats[statName] ?? 0;
                   const rolled = rolledStats[statName] ?? base;
-                  const percentage = calculatePercentage(base, rolled);
+                  const percentage =
+                    statName === 'OptimalRange'
+                      ? calculatePercentage(
+                          normalizeRangeValue(base),
+                          normalizeRangeValue(rolled),
+                        )
+                      : calculatePercentage(base, rolled);
                   const beneficial = isBeneficial(statName, percentage);
 
                   return (
@@ -612,10 +623,13 @@ export default function AnalysisDisplay({
                 </thead>
                 <tbody>
                   {liveRows.map((row) => {
-                    const percentage = calculatePercentage(
-                      row.base,
-                      row.rolled,
-                    );
+                    const percentage =
+                      row.statName === 'OptimalRange'
+                        ? calculatePercentage(
+                            normalizeRangeValue(row.base),
+                            normalizeRangeValue(row.rolled),
+                          )
+                        : calculatePercentage(row.base, row.rolled);
                     const beneficial = row.statName
                       ? isBeneficial(row.statName, percentage)
                       : percentage > 0;
