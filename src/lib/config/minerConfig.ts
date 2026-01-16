@@ -405,13 +405,13 @@ const MODULATED_TIER_RANGES: TierRanges = {
 };
 
 const ICE_TIER_RANGES: TierRanges = {
-  S: { min: 35.7, max: 37.8 },
-  A: { min: 33.5, max: 35.7 },
-  B: { min: 31.4, max: 33.5 },
-  C: { min: 29.2, max: 31.4 },
-  D: { min: 27.1, max: 29.2 },
-  E: { min: 25.0, max: 27.1 },
-  F: { min: 0, max: 25.0 },
+  S: { min: 86.0, max: 91.4 },
+  A: { min: 80.6, max: 86.0 },
+  B: { min: 75.2, max: 80.6 },
+  C: { min: 70.0, max: 75.2 },
+  D: { min: 64.6, max: 70.0 },
+  E: { min: 59.1, max: 64.6 },
+  F: { min: 0, max: 59.1 },
 };
 
 export function getBaseStats(minerType: MinerType): BaseStats {
