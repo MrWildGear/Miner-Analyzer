@@ -54,8 +54,6 @@ export function renderExportFormat(
     baseActivationTime,
     baseCritChance,
     baseCritBonus,
-    baseResidueProb,
-    baseResidueMult,
   );
 
   // Calculate percentages for both Base and Effective M3/sec
@@ -185,8 +183,6 @@ export function renderExportFormat(
     liveActivationTime,
     liveCritChance,
     liveCritBonus,
-    liveResidueProb,
-    liveResidueMult,
   );
   const liveBaseEffectiveM3PerSec =
     MiningCalculator.calculateEffectiveM3PerSec(
@@ -194,8 +190,6 @@ export function renderExportFormat(
       liveBaseActivationTime,
       liveBaseCritChance,
       liveBaseCritBonus,
-      liveBaseResidueProb,
-      liveBaseResidueMult,
     );
 
   // Calculate optimal range percentage if available
@@ -225,7 +219,6 @@ export function renderExportFormat(
 
   // Build replacement map
   const tier = analysis.tier.trim();
-  const spaceAfterTier = tier.endsWith('+') ? '' : ' ';
 
   const replacements: Record<string, string> = {
     '{tier}': tier,

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { readText, writeText } from '@tauri-apps/plugin-clipboard-manager';
-import { Moon, Sun, Download, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Moon, Sun, Download, CheckCircle2 } from 'lucide-react';
 import type { MinerType, AnalysisResult, SkillLevels } from '@/types';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { parseItemStats } from '@/lib/parser/itemStatsParser';
 import { analyzeRoll } from '@/lib/analyzer/rollAnalyzer';
 import { getBaseStats, getDefaultSkillLevels } from '@/lib/config/minerConfig';
-import * as MiningCalculator from '@/lib/calculator/miningCalculator';
 import AnalysisDisplay from './AnalysisDisplay';
 import TierRangesDialog from './TierRangesDialog';
 import ExportFormatDialog from './ExportFormatDialog';
@@ -59,7 +58,7 @@ export default function MainAnalyzer() {
     return true;
   });
 
-  const { result: versionCheck, isChecking: isCheckingVersion, checkForUpdates } = useVersionCheck(true);
+  const { result: versionCheck, isChecking: isCheckingVersion } = useVersionCheck(true);
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
 
   // Show update dialog when an update is available
@@ -149,27 +148,6 @@ export default function MainAnalyzer() {
             skillLevels,
           );
           setAnalysis(result);
-
-          // Calculate base values for both metrics
-          const baseMiningAmount = baseStats.MiningAmount ?? 0;
-          const baseActivationTime = baseStats.ActivationTime ?? 0;
-          const baseCritChance = baseStats.CriticalSuccessChance ?? 0;
-          const baseCritBonus = baseStats.CriticalSuccessBonusYield ?? 0;
-          const baseResidueProb = baseStats.ResidueProbability ?? 0;
-          const baseResidueMult = baseStats.ResidueVolumeMultiplier ?? 0;
-
-          const baseBaseM3PerSec = MiningCalculator.calculateBaseM3PerSec(
-            baseMiningAmount,
-            baseActivationTime,
-          );
-          const baseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
-            baseMiningAmount,
-            baseActivationTime,
-            baseCritChance,
-            baseCritBonus,
-            baseResidueProb,
-            baseResidueMult,
-          );
 
           // Generate export text using custom format
           const tierText = renderExportFormat(exportFormat, {

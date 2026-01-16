@@ -23,7 +23,8 @@ export function calculateEffectiveM3PerSec(
 
   const baseM3 = miningAmount;
   const critGain = baseM3 * critBonus * critChance;
-  const expectedM3PerCycle = baseM3 + critGain;
+  const residueLoss = baseM3 * residueProbability * residueMultiplier;
+  const expectedM3PerCycle = baseM3 + critGain - residueLoss;
   return expectedM3PerCycle / activationTime;
 }
 

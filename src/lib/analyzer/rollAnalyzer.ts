@@ -55,8 +55,6 @@ export function analyzeRoll(
       activationTime,
       critChance,
       critBonus,
-      0,
-      0,
     );
     result.basePlusCritsM3PerSec = null;
   } else {
@@ -72,8 +70,6 @@ export function analyzeRoll(
       activationTime,
       critChance,
       critBonus,
-      residueProb,
-      residueMult,
     );
   }
 
@@ -140,8 +136,6 @@ function calculateLiveEffectiveM3PerSec(
       activationTime,
       critChance,
       critBonus,
-      0,
-      0,
     );
   }
 
@@ -150,8 +144,6 @@ function calculateLiveEffectiveM3PerSec(
     activationTime,
     critChance,
     critBonus,
-    residueProb,
-    residueMult,
   );
 }
 
