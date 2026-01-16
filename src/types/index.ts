@@ -38,4 +38,7 @@ export interface SkillLevels {
   exhumers: number;
   miningExploitation: number;
   miningPrecision: number;
+  iceHarvesting: number;
+  iceHarvestingImplant: number;
+  oreMiningImplant: number;
 }

@@ -29,6 +29,9 @@ const SKILL_FIELDS: Array<{
   { key: 'exhumers', label: 'Exhumers' },
   { key: 'miningExploitation', label: 'Mining Exploitation' },
   { key: 'miningPrecision', label: 'Mining Precision' },
+  { key: 'iceHarvesting', label: 'Ice Harvesting' },
+  { key: 'iceHarvestingImplant', label: 'Ice Harvesting Implant %' },
+  { key: 'oreMiningImplant', label: 'Ore Mining Implant %' },
 ];
 
 export default function SkillLevelsDialog({
@@ -68,7 +71,7 @@ export default function SkillLevelsDialog({
         <DialogHeader>
           <DialogTitle>Skill Levels</DialogTitle>
           <DialogDescription>
-            Set mining-related skills (0-5).
+            Set mining-related skills (0-5). Ice implant is a percent (0-5).
           </DialogDescription>
         </DialogHeader>
 
@@ -90,6 +93,7 @@ export default function SkillLevelsDialog({
             </div>
           ))}
         </div>
+        <div className="pb-4" />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

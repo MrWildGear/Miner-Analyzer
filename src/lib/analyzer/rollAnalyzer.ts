@@ -116,7 +116,7 @@ function calculateLiveEffectiveM3PerSec(
   minerType: MinerType,
   skillLevels: SkillLevels,
 ): number {
-  const liveModifiers = createLiveModifiers(skillLevels);
+  const liveModifiers = createLiveModifiers(minerType, skillLevels);
   const miningAmount =
     (stats.MiningAmount ?? 0) * combineMultipliers(liveModifiers.yield);
   const activationTime =

@@ -14,7 +14,6 @@ export const SKILL_YIELD_MULTIPLIER = 1;
 export const SKILL_CYCLE_TIME_MULTIPLIER = 1;
 export const SKILL_RANGE_MULTIPLIER = 1;
 export const HIGHWALL_MINING_YIELD_BONUS = 0.03;
-export const IMPLANT_YIELD_MULTIPLIER = 1 + HIGHWALL_MINING_YIELD_BONUS;
 export const IMPLANT_CYCLE_TIME_MULTIPLIER = 1;
 export const IMPLANT_RANGE_MULTIPLIER = 1;
 
@@ -34,6 +33,9 @@ export function getDefaultSkillLevels(): SkillLevels {
     exhumers: DEFAULT_SKILL_LEVEL,
     miningExploitation: DEFAULT_SKILL_LEVEL,
     miningPrecision: DEFAULT_SKILL_LEVEL,
+    iceHarvesting: DEFAULT_SKILL_LEVEL,
+    iceHarvestingImplant: 3,
+    oreMiningImplant: 3,
   };
 }
 
@@ -43,14 +45,23 @@ const MINING_BARGE_YIELD_PER_LEVEL = 0.03;
 const MINING_BARGE_RANGE_PER_LEVEL = 0.06;
 const EXHUMERS_YIELD_PER_LEVEL = 0.06;
 const EXHUMERS_STRIP_MINER_DURATION_REDUCTION_PER_LEVEL = 0.03;
+const EXHUMERS_ICE_HARVESTER_DURATION_REDUCTION_PER_LEVEL = 0.04;
+const MINING_BARGE_ICE_HARVESTER_DURATION_REDUCTION_PER_LEVEL = 0.03;
+const ICE_HARVESTING_DURATION_REDUCTION_PER_LEVEL = 0.05;
 const MINING_EXPLOITATION_CRIT_BONUS_PER_LEVEL = 0.05;
 const MINING_PRECISION_CRIT_CHANCE_PER_LEVEL = 0.1;
 
 const HULK_ROLE_STRIP_MINER_CYCLE_TIME = 0.85;
+const HULK_ROLE_ICE_HARVESTER_CYCLE_TIME = 0.7;
 
 const MINING_LASER_UPGRADE_II_YIELD_BONUS = 0.09;
 const MINING_LASER_UPGRADE_II_COUNT = 3;
 const APPLY_STACKING_PENALTY = false;
+
+const ICE_HARVESTER_UPGRADE_II_CYCLE_TIME_BONUS = 0.09;
+const ICE_HARVESTER_UPGRADE_II_COUNT = 3;
+const ICE_HARVESTER_ACCELERATOR_I_CYCLE_TIME_BONUS = 0.12;
+const ICE_HARVESTER_ACCELERATOR_I_COUNT = 1;
 
 const MINING_SURVEY_CHIPSET_II_COUNT = 1;
 const MINING_SURVEY_CHIPSET_II_CRIT_CHANCE = 1.2;
@@ -99,6 +110,23 @@ const MINING_LASER_UPGRADE_II_MULTIPLIERS = (
         () => MINING_LASER_UPGRADE_II_YIELD_BONUS,
       )
 ).map((bonus) => 1 + bonus);
+const ICE_HARVESTER_UPGRADE_II_MULTIPLIERS = (
+  APPLY_STACKING_PENALTY
+    ? applyStackingPenalties(
+        Array.from(
+          { length: ICE_HARVESTER_UPGRADE_II_COUNT },
+          () => ICE_HARVESTER_UPGRADE_II_CYCLE_TIME_BONUS,
+        ),
+      )
+    : Array.from(
+        { length: ICE_HARVESTER_UPGRADE_II_COUNT },
+        () => ICE_HARVESTER_UPGRADE_II_CYCLE_TIME_BONUS,
+      )
+).map((bonus) => 1 - bonus);
+const ICE_HARVESTER_ACCELERATOR_I_MULTIPLIERS = Array.from(
+  { length: ICE_HARVESTER_ACCELERATOR_I_COUNT },
+  () => 1 - ICE_HARVESTER_ACCELERATOR_I_CYCLE_TIME_BONUS,
+);
 const MINING_SURVEY_CHIPSET_II_CRIT_CHANCE_MULTIPLIERS = Array.from(
   { length: MINING_SURVEY_CHIPSET_II_COUNT },
   () => MINING_SURVEY_CHIPSET_II_CRIT_CHANCE,
@@ -180,7 +208,10 @@ export function applyModulatedCrystalModifiers(
   return updated;
 }
 
-export function createLiveModifiers(skillLevels: SkillLevels) {
+export function createLiveModifiers(
+  minerType: MinerType,
+  skillLevels: SkillLevels,
+) {
   const miningSkillYieldMultiplier =
     1 + skillLevels.mining * MINING_SKILL_YIELD_PER_LEVEL;
   const astrogeologyYieldMultiplier =
@@ -191,6 +222,22 @@ export function createLiveModifiers(skillLevels: SkillLevels) {
     1 + skillLevels.miningBarge * MINING_BARGE_RANGE_PER_LEVEL;
   const exhumersYieldMultiplier =
     1 + skillLevels.exhumers * EXHUMERS_YIELD_PER_LEVEL;
+  const miningBargeIceHarvesterDurationMultiplier = Math.max(
+    0,
+    1 -
+      skillLevels.miningBarge *
+        MINING_BARGE_ICE_HARVESTER_DURATION_REDUCTION_PER_LEVEL,
+  );
+  const exhumersIceHarvesterDurationMultiplier = Math.max(
+    0,
+    1 -
+      skillLevels.exhumers *
+        EXHUMERS_ICE_HARVESTER_DURATION_REDUCTION_PER_LEVEL,
+  );
+  const iceHarvestingDurationMultiplier = Math.max(
+    0,
+    1 - skillLevels.iceHarvesting * ICE_HARVESTING_DURATION_REDUCTION_PER_LEVEL,
+  );
   const exhumersStripMinerDurationMultiplier = Math.max(
     0,
     1 -
@@ -202,6 +249,50 @@ export function createLiveModifiers(skillLevels: SkillLevels) {
     skillLevels.miningExploitation * MINING_EXPLOITATION_CRIT_BONUS_PER_LEVEL;
   const miningPrecisionCritChanceMultiplier =
     1 + skillLevels.miningPrecision * MINING_PRECISION_CRIT_CHANCE_PER_LEVEL;
+
+  const iceHarvestingImplantMultiplier = Math.max(
+    0,
+    1 - Math.min(5, Math.max(0, skillLevels.iceHarvestingImplant)) / 100,
+  );
+  const oreMiningImplantMultiplier =
+    1 + Math.min(5, Math.max(0, skillLevels.oreMiningImplant)) / 100;
+  const unifiedRangeBoostMultiplier = MINING_FOREMAN_BURST_RANGE;
+
+  if (minerType === 'Ice') {
+    return {
+      yield: [SHIP_ROLE_BONUS],
+      cycleTime: [
+        HULK_ROLE_ICE_HARVESTER_CYCLE_TIME,
+        miningBargeIceHarvesterDurationMultiplier,
+        exhumersIceHarvesterDurationMultiplier,
+        iceHarvestingDurationMultiplier,
+        MINING_FOREMAN_BURST_CYCLE_TIME,
+        ...ICE_HARVESTER_UPGRADE_II_MULTIPLIERS,
+        ...ICE_HARVESTER_ACCELERATOR_I_MULTIPLIERS,
+        SKILL_CYCLE_TIME_MULTIPLIER,
+        iceHarvestingImplantMultiplier,
+      ],
+      range: [
+        miningBargeRangeMultiplier,
+        unifiedRangeBoostMultiplier,
+        SKILL_RANGE_MULTIPLIER,
+      ],
+      critChance: [
+        MINING_FOREMAN_BURST_CRIT_CHANCE,
+        miningPrecisionCritChanceMultiplier,
+        ...MINING_SURVEY_CHIPSET_II_CRIT_CHANCE_MULTIPLIERS,
+      ],
+      critBonus: [
+        miningExploitationCritBonusMultiplier,
+        ...MINING_SURVEY_CHIPSET_II_CRIT_BONUS_MULTIPLIERS,
+      ],
+      residueProbability: [
+        MINING_FOREMAN_BURST_RESIDUE,
+        ...MINING_SURVEY_CHIPSET_II_RESIDUE_MULTIPLIERS,
+      ],
+      residueVolumeMultiplier: [],
+    };
+  }
 
   return {
     yield: [
@@ -215,7 +306,7 @@ export function createLiveModifiers(skillLevels: SkillLevels) {
       exhumersYieldMultiplier,
       ...MINING_LASER_UPGRADE_II_MULTIPLIERS,
       SKILL_YIELD_MULTIPLIER,
-      IMPLANT_YIELD_MULTIPLIER,
+      oreMiningImplantMultiplier,
     ],
     cycleTime: [
       HULK_ROLE_STRIP_MINER_CYCLE_TIME,
@@ -314,13 +405,13 @@ const MODULATED_TIER_RANGES: TierRanges = {
 };
 
 const ICE_TIER_RANGES: TierRanges = {
-  S: { min: 7.033, max: 7.44 },
-  A: { min: 6.627, max: 7.033 },
-  B: { min: 6.22, max: 6.627 },
-  C: { min: 5.813, max: 6.22 },
-  D: { min: 5.407, max: 5.813 },
-  E: { min: 5, max: 5.407 },
-  F: { min: 0, max: 5 },
+  S: { min: 35.7, max: 37.8 },
+  A: { min: 33.5, max: 35.7 },
+  B: { min: 31.4, max: 33.5 },
+  C: { min: 29.2, max: 31.4 },
+  D: { min: 27.1, max: 29.2 },
+  E: { min: 25.0, max: 27.1 },
+  F: { min: 0, max: 25.0 },
 };
 
 export function getBaseStats(minerType: MinerType): BaseStats {
