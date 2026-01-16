@@ -31,6 +31,7 @@ const SKILL_FIELDS: Array<{
   { key: 'miningPrecision', label: 'Mining Precision' },
   { key: 'iceHarvesting', label: 'Ice Harvesting' },
   { key: 'iceHarvestingImplant', label: 'Ice Harvesting Implant %' },
+  { key: 'oreMiningImplant', label: 'Ore Mining Implant %' },
 ];
 
 export default function SkillLevelsDialog({
@@ -92,6 +93,7 @@ export default function SkillLevelsDialog({
             </div>
           ))}
         </div>
+        <div className="pb-4" />
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>

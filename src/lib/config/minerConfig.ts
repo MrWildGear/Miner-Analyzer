@@ -14,7 +14,6 @@ export const SKILL_YIELD_MULTIPLIER = 1;
 export const SKILL_CYCLE_TIME_MULTIPLIER = 1;
 export const SKILL_RANGE_MULTIPLIER = 1;
 export const HIGHWALL_MINING_YIELD_BONUS = 0.03;
-export const IMPLANT_YIELD_MULTIPLIER = 1 + HIGHWALL_MINING_YIELD_BONUS;
 export const IMPLANT_CYCLE_TIME_MULTIPLIER = 1;
 export const IMPLANT_RANGE_MULTIPLIER = 1;
 
@@ -36,6 +35,7 @@ export function getDefaultSkillLevels(): SkillLevels {
     miningPrecision: DEFAULT_SKILL_LEVEL,
     iceHarvesting: DEFAULT_SKILL_LEVEL,
     iceHarvestingImplant: 3,
+    oreMiningImplant: 3,
   };
 }
 
@@ -254,6 +254,9 @@ export function createLiveModifiers(
     0,
     1 - Math.min(5, Math.max(0, skillLevels.iceHarvestingImplant)) / 100,
   );
+  const oreMiningImplantMultiplier =
+    1 + Math.min(5, Math.max(0, skillLevels.oreMiningImplant)) / 100;
+  const unifiedRangeBoostMultiplier = MINING_FOREMAN_BURST_RANGE;
 
   if (minerType === 'Ice') {
     return {
@@ -263,12 +266,17 @@ export function createLiveModifiers(
         miningBargeIceHarvesterDurationMultiplier,
         exhumersIceHarvesterDurationMultiplier,
         iceHarvestingDurationMultiplier,
+        MINING_FOREMAN_BURST_CYCLE_TIME,
         ...ICE_HARVESTER_UPGRADE_II_MULTIPLIERS,
         ...ICE_HARVESTER_ACCELERATOR_I_MULTIPLIERS,
         SKILL_CYCLE_TIME_MULTIPLIER,
         iceHarvestingImplantMultiplier,
       ],
-      range: [miningBargeRangeMultiplier, SKILL_RANGE_MULTIPLIER],
+      range: [
+        miningBargeRangeMultiplier,
+        unifiedRangeBoostMultiplier,
+        SKILL_RANGE_MULTIPLIER,
+      ],
       critChance: [
         MINING_FOREMAN_BURST_CRIT_CHANCE,
         miningPrecisionCritChanceMultiplier,
@@ -298,7 +306,7 @@ export function createLiveModifiers(
       exhumersYieldMultiplier,
       ...MINING_LASER_UPGRADE_II_MULTIPLIERS,
       SKILL_YIELD_MULTIPLIER,
-      IMPLANT_YIELD_MULTIPLIER,
+      oreMiningImplantMultiplier,
     ],
     cycleTime: [
       HULK_ROLE_STRIP_MINER_CYCLE_TIME,
