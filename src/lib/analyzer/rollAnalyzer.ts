@@ -55,6 +55,8 @@ export function analyzeRoll(
       activationTime,
       critChance,
       critBonus,
+      0, // residueProbability (no residue for ORE and Ice)
+      0, // residueMultiplier (no residue for ORE and Ice)
     );
     result.basePlusCritsM3PerSec = null;
   } else {
@@ -70,6 +72,8 @@ export function analyzeRoll(
       activationTime,
       critChance,
       critBonus,
+      residueProb,
+      residueMult,
     );
   }
 
@@ -136,6 +140,8 @@ function calculateLiveEffectiveM3PerSec(
       activationTime,
       critChance,
       critBonus,
+      0, // residueProbability (no residue for ORE and Ice)
+      0, // residueMultiplier (no residue for ORE and Ice)
     );
   }
 
@@ -144,6 +150,8 @@ function calculateLiveEffectiveM3PerSec(
     activationTime,
     critChance,
     critBonus,
+    residueProb,
+    residueMult,
   );
 }
 

@@ -54,6 +54,8 @@ export function renderExportFormat(
     baseActivationTime,
     baseCritChance,
     baseCritBonus,
+    baseResidueProb,
+    baseResidueMult,
   );
 
   // Calculate percentages for both Base and Effective M3/sec
@@ -183,6 +185,8 @@ export function renderExportFormat(
     liveActivationTime,
     liveCritChance,
     liveCritBonus,
+    liveResidueProb,
+    liveResidueMult,
   );
   const liveBaseEffectiveM3PerSec =
     MiningCalculator.calculateEffectiveM3PerSec(
@@ -190,6 +194,8 @@ export function renderExportFormat(
       liveBaseActivationTime,
       liveBaseCritChance,
       liveBaseCritBonus,
+      liveBaseResidueProb,
+      liveBaseResidueMult,
     );
 
   // Calculate optimal range percentage if available
