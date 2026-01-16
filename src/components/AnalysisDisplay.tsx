@@ -249,21 +249,17 @@ export default function AnalysisDisplay({
     liveMiningAmount,
     liveActivationTime,
   );
-  const liveBaseEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+  const liveBaseEffectiveM3PerSec = MiningCalculator.calculateBasePlusCritsM3PerSec(
     liveBaseMiningAmount,
     liveBaseActivationTime,
     liveBaseCritChance,
     liveBaseCritBonus,
-    liveBaseResidueProb,
-    liveBaseResidueMult,
   );
-  const liveEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+  const liveEffectiveM3PerSec = MiningCalculator.calculateBasePlusCritsM3PerSec(
     liveMiningAmount,
     liveActivationTime,
     liveCritChance,
     liveCritBonus,
-    liveResidueProb,
-    liveResidueMult,
   );
   const liveBaseEffectiveMiningPct =
     MiningCalculator.calculateEffectiveMiningPercent(
