@@ -405,35 +405,43 @@ const MODULATED_TIER_RANGES: TierRanges = {
 };
 
 const ICE_TIER_RANGES: TierRanges = {
-  S: { min: 35.7, max: 37.8 },
-  A: { min: 33.5, max: 35.7 },
-  B: { min: 31.4, max: 33.5 },
-  C: { min: 29.2, max: 31.4 },
-  D: { min: 27.1, max: 29.2 },
-  E: { min: 25.0, max: 27.1 },
-  F: { min: 0, max: 25.0 },
+  S: { min: 86.0, max: 91.4 },
+  A: { min: 80.6, max: 86.0 },
+  B: { min: 75.2, max: 80.6 },
+  C: { min: 70.0, max: 75.2 },
+  D: { min: 64.6, max: 70.0 },
+  E: { min: 59.1, max: 64.6 },
+  F: { min: 0, max: 59.1 },
+};
+
+// Use a lookup map instead of switch to avoid minification issues in production
+const BASE_STATS_MAP: Record<MinerType, () => BaseStats> = {
+  ORE: () => ({ ...ORE_BASE_STATS }),
+  Ice: () => ({ ...ICE_BASE_STATS }),
+  Modulated: () => applyModulatedCrystalModifiers({ ...MODULATED_BASE_STATS }),
 };
 
 export function getBaseStats(minerType: MinerType): BaseStats {
-  switch (minerType) {
-    case 'ORE':
-      return { ...ORE_BASE_STATS };
-    case 'Ice':
-      return { ...ICE_BASE_STATS };
-    case 'Modulated':
-    default:
-      return applyModulatedCrystalModifiers({ ...MODULATED_BASE_STATS });
+  const getStats = BASE_STATS_MAP[minerType];
+  if (getStats) {
+    return getStats();
   }
+  // Fallback to Modulated
+  return applyModulatedCrystalModifiers({ ...MODULATED_BASE_STATS });
 }
 
+// Use a lookup map instead of switch to avoid minification issues in production
+const TIER_RANGES_MAP: Record<MinerType, TierRanges> = {
+  ORE: ORE_TIER_RANGES,
+  Ice: ICE_TIER_RANGES,
+  Modulated: MODULATED_TIER_RANGES,
+};
+
 export function getTierRanges(minerType: MinerType): TierRanges {
-  switch (minerType) {
-    case 'ORE':
-      return { ...ORE_TIER_RANGES };
-    case 'Ice':
-      return { ...ICE_TIER_RANGES };
-    case 'Modulated':
-    default:
-      return { ...MODULATED_TIER_RANGES };
+  const ranges = TIER_RANGES_MAP[minerType];
+  if (ranges) {
+    return { ...ranges };
   }
+  // Fallback to Modulated
+  return { ...MODULATED_TIER_RANGES };
 }
