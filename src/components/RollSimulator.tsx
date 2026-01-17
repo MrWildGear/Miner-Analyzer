@@ -236,6 +236,9 @@ export default function RollSimulator() {
   };
 
   const formatNumber = (num: number): string => {
+    if (!isFinite(num)) {
+      return '∞';
+    }
     if (num >= 1_000_000_000) {
       return (num / 1_000_000_000).toFixed(2) + 'B';
     }
@@ -250,7 +253,29 @@ export default function RollSimulator() {
 
   const formatPercentage = (value: number, total: number): string => {
     if (total === 0) return '0.00%';
-    return ((value / total) * 100).toFixed(4) + '%';
+    return ((value / total) * 100).toFixed(2) + '%';
+  };
+
+  const formatOdds = (value: number, total: number): string => {
+    if (total === 0 || value === 0) return '∞:1';
+    const percentage = (value / total) * 100;
+    if (percentage === 0) return '∞:1';
+    if (percentage >= 100) return '1:1';
+    const odds = 100 / percentage;
+    
+    // Round to nearest whole number
+    const roundedOdds = Math.round(odds);
+    
+    // Format odds with B/M/K notation for large numbers
+    if (roundedOdds >= 1_000_000_000) {
+      return Math.round(roundedOdds / 1_000_000_000) + 'B:1';
+    } else if (roundedOdds >= 1_000_000) {
+      return Math.round(roundedOdds / 1_000_000) + 'M:1';
+    } else if (roundedOdds >= 1_000) {
+      return Math.round(roundedOdds / 1_000) + 'K:1';
+    } else {
+      return roundedOdds + ':1';
+    }
   };
 
   const getETA = (startTime: number | null, currentProgress: { completed: number; total: number }): string => {
@@ -298,8 +323,9 @@ export default function RollSimulator() {
                     <th className="text-left p-2">Tier</th>
                     <th className="text-right p-2">Count</th>
                     <th className="text-right p-2">Percentage</th>
-                    <th className="text-right p-2">Total (Base + Plus)</th>
+                    <th className="text-right p-2">Odds</th>
                     <th className="text-right p-2">Total %</th>
+                    <th className="text-right p-2">Total Odds</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -321,13 +347,16 @@ export default function RollSimulator() {
                         <td className="text-right p-2">
                           {formatPercentage(count, result.totalRolls)}
                         </td>
+                        <td className="text-right p-2">
+                          {formatOdds(count, result.totalRolls)}
+                        </td>
                         {isBaseTier ? (
                           <>
                             <td className="text-right p-2 font-semibold">
-                              {formatNumber(totalCount)}
+                              {formatPercentage(totalCount, result.totalRolls)}
                             </td>
                             <td className="text-right p-2 font-semibold">
-                              {formatPercentage(totalCount, result.totalRolls)}
+                              {formatOdds(totalCount, result.totalRolls)}
                             </td>
                           </>
                         ) : (
@@ -390,15 +419,15 @@ export default function RollSimulator() {
               <div>
                 <Label className="text-muted-foreground">Expected Value</Label>
                 <p className="text-2xl font-bold">
-                  {result.costAnalysis.expectedValue.toFixed(2)}
+                  {formatNumber(result.costAnalysis.expectedValue)}
                 </p>
               </div>
               <div>
                 <Label className="text-muted-foreground">Total Cost</Label>
                 <p className="text-2xl font-bold">
-                  {(
+                  {formatNumber(
                     Number.parseFloat(baseItemCostValue) + Number.parseFloat(mutaplasmidCostValue)
-                  ).toFixed(2)}
+                  )}
                 </p>
               </div>
               <div>
@@ -413,7 +442,7 @@ export default function RollSimulator() {
               </div>
             </div>
             <div>
-              <Label className="text-muted-foreground mb-2 block">Cost per Tier</Label>
+              <Label className="text-muted-foreground mb-2 block">Cost to Get One (Based on Odds)</Label>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -424,14 +453,48 @@ export default function RollSimulator() {
                   </thead>
                   <tbody>
                     {allTiers.map((tier) => {
-                      const cost = result.costAnalysis.costPerTier[tier] || 0;
-                      if (cost === 0) return null;
+                      const cost = result.costAnalysis.costPerTier[tier];
+                      if (cost === undefined || cost === 0) return null;
+                      if (cost === Infinity) {
+                        return (
+                          <tr key={tier} className="border-b">
+                            <td className={`p-2 font-semibold ${getTierColor(tier)}`}>
+                              {tier}
+                            </td>
+                            <td className="text-right p-2 text-muted-foreground">∞</td>
+                          </tr>
+                        );
+                      }
                       return (
                         <tr key={tier} className="border-b">
                           <td className={`p-2 font-semibold ${getTierColor(tier)}`}>
                             {tier}
                           </td>
-                          <td className="text-right p-2">{cost.toFixed(2)}</td>
+                          <td className="text-right p-2">{formatNumber(cost)}</td>
+                        </tr>
+                      );
+                    })}
+                    {/* Show combined totals */}
+                    {['S', 'A', 'B', 'C', 'D', 'E', 'F'].map((baseTier) => {
+                      const totalTierKey = `${baseTier} Total`;
+                      const cost = result.costAnalysis.costPerTier[totalTierKey];
+                      if (cost === undefined || cost === 0) return null;
+                      if (cost === Infinity) {
+                        return (
+                          <tr key={totalTierKey} className="border-b">
+                            <td className={`p-2 font-semibold ${getTierColor(baseTier)}`}>
+                              {baseTier} Total
+                            </td>
+                            <td className="text-right p-2 text-muted-foreground">∞</td>
+                          </tr>
+                        );
+                      }
+                      return (
+                        <tr key={totalTierKey} className="border-b">
+                          <td className={`p-2 font-semibold ${getTierColor(baseTier)}`}>
+                            {baseTier} Total
+                          </td>
+                          <td className="text-right p-2">{formatNumber(cost)}</td>
                         </tr>
                       );
                     })}

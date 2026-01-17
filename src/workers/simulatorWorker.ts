@@ -107,29 +107,62 @@ function calculateCostAnalysis(
   const totalCost = baseItemCost + mutaplasmidCost;
   let totalValue = 0;
 
-  // Calculate cost per tier (assuming each tier has a value multiplier)
-  // For now, we'll use a simple model where higher tiers are worth more
-  const tierValueMultipliers: Record<string, number> = {
-    S: 10.0,
-    'S+': 12.0,
-    A: 5.0,
-    'A+': 6.0,
-    B: 2.5,
-    'B+': 3.0,
-    C: 1.5,
-    'C+': 1.8,
-    D: 1.2,
-    'D+': 1.4,
-    E: 1.0,
-    'E+': 1.1,
-    F: 0.5,
-  };
-
+  // Calculate cost per tier based on actual odds
+  // Cost to get one = totalCostPerRun * odds
+  // Odds = 100 / percentage
   for (const [tier, count] of Object.entries(tierDistribution)) {
+    if (count === 0 || totalRolls === 0) {
+      // Infinite cost for impossible tiers
+      costPerTier[tier] = Infinity;
+      continue;
+    }
+    
+    const percentage = (count / totalRolls) * 100;
+    if (percentage === 0) {
+      costPerTier[tier] = Infinity;
+      continue;
+    }
+    
+    const odds = 100 / percentage;
+    const costToGetOne = totalCost * odds;
+    costPerTier[tier] = costToGetOne;
+    
+    // For expected value, we still need some value estimation
+    // Using a simple model where higher tiers are worth more
+    const tierValueMultipliers: Record<string, number> = {
+      S: 10.0,
+      'S+': 12.0,
+      A: 5.0,
+      'A+': 6.0,
+      B: 2.5,
+      'B+': 3.0,
+      C: 1.5,
+      'C+': 1.8,
+      D: 1.2,
+      'D+': 1.4,
+      E: 1.0,
+      'E+': 1.1,
+      F: 0.5,
+    };
     const multiplier = tierValueMultipliers[tier] || 1.0;
     const tierValue = totalCost * multiplier;
-    costPerTier[tier] = tierValue;
     totalValue += tierValue * (count / totalRolls);
+  }
+
+  // Also calculate costs for combined tiers (S total, A total, etc.)
+  const baseTiers = ['S', 'A', 'B', 'C', 'D', 'E', 'F'];
+  for (const baseTier of baseTiers) {
+    const plusTier = baseTier + '+';
+    const baseCount = tierDistribution[baseTier] || 0;
+    const plusCount = tierDistribution[plusTier] || 0;
+    const totalCount = baseCount + plusCount;
+    
+    if (totalCount > 0 && totalRolls > 0) {
+      const percentage = (totalCount / totalRolls) * 100;
+      const odds = 100 / percentage;
+      const costToGetOne = totalCost * odds;
+      costPerTier[`${baseTier} Total`] = costToGetOne;
+    }
   }
 
   const expectedValue = totalValue;
