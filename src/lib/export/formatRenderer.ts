@@ -180,22 +180,18 @@ export function renderExportFormat(
     liveBaseMiningAmount,
     liveBaseActivationTime,
   );
-  const liveEffectiveM3PerSec = MiningCalculator.calculateEffectiveM3PerSec(
+  const liveEffectiveM3PerSec = MiningCalculator.calculateBasePlusCritsM3PerSec(
     liveMiningAmount,
     liveActivationTime,
     liveCritChance,
     liveCritBonus,
-    liveResidueProb,
-    liveResidueMult,
   );
   const liveBaseEffectiveM3PerSec =
-    MiningCalculator.calculateEffectiveM3PerSec(
+    MiningCalculator.calculateBasePlusCritsM3PerSec(
       liveBaseMiningAmount,
       liveBaseActivationTime,
       liveBaseCritChance,
       liveBaseCritBonus,
-      liveBaseResidueProb,
-      liveBaseResidueMult,
     );
 
   // Calculate optimal range percentage if available
