@@ -200,6 +200,12 @@ async function runSimulation(config: SimulationConfig) {
 
         const roll = generateRoll(minerType, mutaplasmidLevel, skillLevels);
 
+        // #region agent log
+        if (completed < 5 || completed % 10000 === 0) {
+          fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'simulatorWorker.ts:201',message:'Simulator roll generated',data:{tier:roll.tier,liveEffectiveM3PerSec:roll.liveEffectiveM3PerSec,minerType,mutaplasmidLevel,completed},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+        }
+        // #endregion
+
         // Track tier distribution
         tierDistribution[roll.tier] = (tierDistribution[roll.tier] || 0) + 1;
 

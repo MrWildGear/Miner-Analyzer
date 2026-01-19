@@ -73,6 +73,10 @@ const PLACEHOLDER_GROUPS = [
         value: '{liveEffectiveMiningPctChange}',
         label: 'Live Effective Mining % change',
       },
+      { value: '{liveResidueProbability}', label: 'Live Residue Probability (rolled)' },
+      { value: '{liveResidueProbabilityPct}', label: 'Live Residue Probability % change' },
+      { value: '{liveResidueVolumeMultiplier}', label: 'Live Residue Volume Multiplier (rolled)' },
+      { value: '{liveResidueVolumeMultiplierPct}', label: 'Live Residue Volume Multiplier % change' },
     ],
   },
 ];
@@ -131,7 +135,11 @@ export default function ExportFormatDialog({
         .replace(/{liveEffectiveM3PerSec}/g, '18.8')
         .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
         .replace(/{liveEffectiveMiningPct}/g, '96.4')
-        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0');
+        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0')
+        .replace(/{liveResidueProbability}/g, '0.425')
+        .replace(/{liveResidueProbabilityPct}/g, '+05.2')
+        .replace(/{liveResidueVolumeMultiplier}/g, '0.96')
+        .replace(/{liveResidueVolumeMultiplierPct}/g, '-04.0');
       setPreview(samplePreview);
     }
   }, [open, format]);
@@ -171,7 +179,11 @@ export default function ExportFormatDialog({
         .replace(/{liveEffectiveM3PerSec}/g, '18.8')
         .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
         .replace(/{liveEffectiveMiningPct}/g, '96.4')
-        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0').length;
+        .replace(/{liveEffectiveMiningPctChange}/g, '-01.0')
+        .replace(/{liveResidueProbability}/g, '0.425')
+        .replace(/{liveResidueProbabilityPct}/g, '+05.2')
+        .replace(/{liveResidueVolumeMultiplier}/g, '0.96')
+        .replace(/{liveResidueVolumeMultiplierPct}/g, '-04.0').length;
 
     if (sampleLength > 100) {
       setError(`Format too long (${sampleLength} chars, max 100)`);
@@ -212,7 +224,11 @@ export default function ExportFormatDialog({
       .replace(/{liveEffectiveM3PerSec}/g, '18.8')
       .replace(/{liveEffectiveM3PerSecPct}/g, '+11.7')
       .replace(/{liveEffectiveMiningPct}/g, '96.4')
-      .replace(/{liveEffectiveMiningPctChange}/g, '-01.0');
+      .replace(/{liveEffectiveMiningPctChange}/g, '-01.0')
+      .replace(/{liveResidueProbability}/g, '0.425')
+      .replace(/{liveResidueProbabilityPct}/g, '+05.2')
+      .replace(/{liveResidueVolumeMultiplier}/g, '0.96')
+      .replace(/{liveResidueVolumeMultiplierPct}/g, '-04.0');
     setPreview(samplePreview);
   };
 
@@ -347,12 +363,12 @@ export default function ExportFormatDialog({
                           const position = textarea?.selectionStart ?? localFormat.length;
                           handleInsertPlaceholder(placeholder.value, position);
                         }}
-                        className="flex flex-col items-start h-auto min-h-[60px] py-2 px-3 text-left cursor-grab active:cursor-grabbing hover:bg-accent overflow-hidden"
+                        className="flex flex-col items-start h-auto min-h-[80px] py-3 px-4 text-left cursor-grab active:cursor-grabbing hover:bg-accent"
                       >
-                        <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-1 break-all">
+                        <code className="text-sm font-medium text-blue-600 dark:text-blue-400 mb-2 break-all w-full">
                           {placeholder.value}
                         </code>
-                        <span className="text-xs text-muted-foreground leading-tight wrap-break-word w-full">
+                        <span className="text-xs text-muted-foreground leading-relaxed break-words w-full whitespace-normal">
                           {placeholder.label}
                         </span>
                       </Button>

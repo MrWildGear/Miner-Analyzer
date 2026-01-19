@@ -84,8 +84,16 @@ export function analyzeRoll(
     skillLevels,
   );
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'rollAnalyzer.ts:88',message:'Before tier determination',data:{liveEffectiveM3PerSec,minerType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
+
   // Determine tier using live effective performance
   let tier = determineTier(liveEffectiveM3PerSec, minerType);
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'rollAnalyzer.ts:95',message:'After tier determination',data:{tier,liveEffectiveM3PerSec},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+  // #endregion
 
   // Check if optimal range is increased and add "+" suffix for tiers above F
   const rolledOptimalRange = result.stats.OptimalRange;
@@ -134,8 +142,12 @@ function calculateLiveEffectiveM3PerSec(
     (stats.ResidueVolumeMultiplier ?? 0) *
     combineMultipliers(liveModifiers.residueVolumeMultiplier);
 
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'rollAnalyzer.ts:137',message:'calculateLiveEffectiveM3PerSec entry',data:{minerType,miningAmount,activationTime,critChance,critBonus,residueProb,residueMult},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+  // #endregion
+
   if (minerType === 'ORE' || minerType === 'Ice') {
-    return MiningCalculator.calculateEffectiveM3PerSec(
+    const result = MiningCalculator.calculateEffectiveM3PerSec(
       miningAmount,
       activationTime,
       critChance,
@@ -143,16 +155,25 @@ function calculateLiveEffectiveM3PerSec(
       0, // residueProbability (no residue for ORE and Ice)
       0, // residueMultiplier (no residue for ORE and Ice)
     );
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'rollAnalyzer.ts:146',message:'ORE/Ice result',data:{result,method:'calculateEffectiveM3PerSec'},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+    // #endregion
+    return result;
   }
 
-  return MiningCalculator.calculateEffectiveM3PerSec(
+  // For Modulated, use calculateBasePlusCritsM3PerSec (no residue) to match simulator
+  // This is the "Effective M3/sec (no residue)" value used for tier determination
+  const withoutResidue = MiningCalculator.calculateBasePlusCritsM3PerSec(
     miningAmount,
     activationTime,
     critChance,
     critBonus,
-    residueProb,
-    residueMult,
   );
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'rollAnalyzer.ts:165',message:'Modulated using calculateBasePlusCritsM3PerSec',data:{withoutResidue,minerType},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+  // #endregion
+
+  return withoutResidue;
 }
 
 function determineTier(m3PerSec: number, minerType: MinerType): string {

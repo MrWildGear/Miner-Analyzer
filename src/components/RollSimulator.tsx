@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { getDefaultSkillLevels } from '@/lib/config/minerConfig';
 import SkillLevelsDialog from './SkillLevelsDialog';
+import TierRangesDialog from './TierRangesDialog';
 
 const SAMPLE_SIZE_PRESETS = [
   { label: '1M', value: 1_000_000 },
@@ -63,6 +64,7 @@ export default function RollSimulator() {
     return getDefaultSkillLevels();
   });
   const [skillLevelsOpen, setSkillLevelsOpen] = useState(false);
+  const [tierRangesOpen, setTierRangesOpen] = useState(false);
   const workerRef = useRef<Worker | null>(null);
   const workerRef2 = useRef<Worker | null>(null);
   const startTimeRef = useRef<number | null>(null);
@@ -727,6 +729,13 @@ export default function RollSimulator() {
             >
               Skill Levels
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => setTierRangesOpen(true)}
+              disabled={isRunning || isRunning2}
+            >
+              Tier Ranges
+            </Button>
           </div>
 
           {/* Progress */}
@@ -851,6 +860,10 @@ export default function RollSimulator() {
         onOpenChange={setSkillLevelsOpen}
         skillLevels={skillLevels}
         onSave={setSkillLevels}
+      />
+      <TierRangesDialog
+        open={tierRangesOpen}
+        onOpenChange={setTierRangesOpen}
       />
     </div>
   );
