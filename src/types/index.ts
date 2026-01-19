@@ -42,3 +42,34 @@ export interface SkillLevels {
   iceHarvestingImplant: number;
   oreMiningImplant: number;
 }
+
+export type MutaplasmidLevel = 'Decayed' | 'Gravid' | 'Unstable';
+
+export interface TierDistribution {
+  [tier: string]: number; // Count of rolls for each tier (S, A, B, C, D, E, F, S+, A+, B+, C+, D+, E+)
+}
+
+export interface SimulationConfig {
+  minerType: MinerType;
+  mutaplasmidLevel: MutaplasmidLevel;
+  baseItemCost: number;
+  mutaplasmidCost: number;
+  sampleSize: number;
+  skillLevels: SkillLevels;
+}
+
+export interface SimulationResult {
+  tierDistribution: TierDistribution;
+  totalRolls: number;
+  statistics: {
+    averageEffectiveM3PerSec: number;
+    medianEffectiveM3PerSec: number;
+    minEffectiveM3PerSec: number;
+    maxEffectiveM3PerSec: number;
+  };
+  costAnalysis: {
+    costPerTier: Record<string, number>; // Cost per tier including +tiers
+    expectedValue: number;
+    roi: number; // Return on investment percentage
+  };
+}

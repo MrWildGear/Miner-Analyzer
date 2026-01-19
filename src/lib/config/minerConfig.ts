@@ -395,13 +395,13 @@ const ORE_TIER_RANGES: TierRanges = {
 };
 
 const MODULATED_TIER_RANGES: TierRanges = {
-  S: { min: 109.4, max: 121.0 },
-  A: { min: 97.8, max: 109.4 },
-  B: { min: 86.2, max: 97.8 },
-  C: { min: 74.6, max: 86.2 },
-  D: { min: 63.1, max: 74.6 },
-  E: { min: 51.5, max: 63.1 },
-  F: { min: 0, max: 51.5 },
+  S: { min: 113.9, max: 121.0 },
+  A: { min: 106.8, max: 113.9 },
+  B: { min: 99.7, max: 106.8 },
+  C: { min: 92.6, max: 99.7 },
+  D: { min: 85.4, max: 92.6 },
+  E: { min: 78.3, max: 85.4 },
+  F: { min: 0, max: 78.3 },
 };
 
 const ICE_TIER_RANGES: TierRanges = {

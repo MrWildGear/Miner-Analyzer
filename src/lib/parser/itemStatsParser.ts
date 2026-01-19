@@ -159,6 +159,12 @@ function processStatLine(
     if (numberMatch) {
       const numberStr = numberMatch[1];
       const numValue = Number.parseFloat(numberStr);
+      
+      // Skip parsing if value is 0 or 0.0 (or 00)
+      if (numValue === 0) {
+        return;
+      }
+      
       const statValue = getStatValue(statName, numValue);
       stats[statName] = statValue;
     }

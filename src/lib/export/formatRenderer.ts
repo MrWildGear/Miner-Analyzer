@@ -273,6 +273,14 @@ export function renderExportFormat(
     '{liveEffectiveMiningPctChange}': formatPercentage(
       calculatePercentage(liveBaseEffectiveMiningPct, liveEffectiveMiningPct),
     ),
+    '{liveResidueProbability}': liveResidueProb.toFixed(3),
+    '{liveResidueProbabilityPct}': formatPercentage(
+      calculatePercentage(liveBaseResidueProb, liveResidueProb),
+    ),
+    '{liveResidueVolumeMultiplier}': liveResidueMult.toFixed(2),
+    '{liveResidueVolumeMultiplierPct}': formatPercentage(
+      calculatePercentage(liveBaseResidueMult, liveResidueMult),
+    ),
   };
 
   // Replace all placeholders
