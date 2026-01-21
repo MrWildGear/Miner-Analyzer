@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import MainAnalyzer from './components/MainAnalyzer';
 import RollSimulator from './components/RollSimulator';
+import LogView from './components/LogView';
 import { Button } from './components/ui/button';
 
-type Tab = 'analyzer' | 'simulator';
+type Tab = 'analyzer' | 'simulator' | 'logview';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('analyzer');
@@ -27,6 +28,13 @@ function App() {
           >
             Simulator
           </Button>
+          <Button
+            variant={activeTab === 'logview' ? 'default' : 'ghost'}
+            onClick={() => setActiveTab('logview')}
+            className="flex-1"
+          >
+            Log View
+          </Button>
         </div>
       </div>
 
@@ -34,6 +42,7 @@ function App() {
       <div className="flex-1 overflow-hidden">
         {activeTab === 'analyzer' && <MainAnalyzer />}
         {activeTab === 'simulator' && <RollSimulator />}
+        {activeTab === 'logview' && <LogView />}
       </div>
     </div>
   );

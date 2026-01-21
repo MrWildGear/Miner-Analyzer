@@ -1,0 +1,19 @@
+{
+  "identifier": "filesystem-access",
+  "description": "Allows the main window to read files and directories from user-selected paths",
+  "windows": ["main"],
+  "permissions": [
+    {
+      "identifier": "fs:scope",
+      "allow": [
+        {
+          "path": "**"
+        }
+      ]
+    },
+    "fs:allow-read-dir",
+    "fs:allow-read-file",
+    "fs:allow-read-text-file",
+    "fs:allow-stat"
+  ]
+}

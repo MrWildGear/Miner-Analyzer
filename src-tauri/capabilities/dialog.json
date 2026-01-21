@@ -1,0 +1,8 @@
+{
+  "identifier": "dialog-access",
+  "description": "Allows the main window to open file and directory dialogs",
+  "windows": ["main"],
+  "permissions": [
+    "dialog:allow-open"
+  ]
+}

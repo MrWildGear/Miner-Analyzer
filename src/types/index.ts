@@ -73,3 +73,36 @@ export interface SimulationResult {
     roi: number; // Return on investment percentage
   };
 }
+
+export interface CharacterMiningData {
+  characterName: string;
+  totalMined: number;
+  critMined: number;
+  totalCycles: number;
+  critCycles: number;
+  totalResidue: number;
+  shipsDestroyed: string[];
+}
+
+export interface OreData {
+  oreName: string;
+  nonCrit: number;
+  crit: number;
+  residue: number;
+}
+
+export interface LogAnalysisResult {
+  characters: Record<string, CharacterMiningData>;
+  oreBreakdown: Record<string, OreData>;
+  dateRange: { start: Date; end: Date };
+  activeDays: Date[];
+  overall: {
+    totalMined: number;
+    totalCrit: number;
+    totalCycles: number;
+    totalCritCycles: number;
+    totalResidue: number;
+    overallCritRate: number;
+    overallResidueRate: number;
+  };
+}
