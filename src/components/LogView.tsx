@@ -44,6 +44,7 @@ export default function LogView() {
 
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastReadTimeRef = useRef<number>(0);
+  const hasPerformedInitialAnalysisRef = useRef<boolean>(false);
 
   // Load log directory on mount
   useEffect(() => {
@@ -64,9 +65,14 @@ export default function LogView() {
     setError(null);
 
     try {
+      // Handle partial date ranges: if only start or only end is set, pass it
+      // If both are set, pass both. If neither is set, pass undefined.
       const dateRangeToUse =
-        dateRange.start && dateRange.end
-          ? { start: dateRange.start, end: dateRange.end }
+        dateRange.start || dateRange.end
+          ? {
+              start: dateRange.start,
+              end: dateRange.end,
+            }
           : undefined;
 
       const result = await analyzeLogs(logDirectory, dateRangeToUse);
@@ -76,9 +82,11 @@ export default function LogView() {
         setActiveDays(result.activeDays);
         setLastUpdate(new Date());
         lastReadTimeRef.current = Date.now();
+        hasPerformedInitialAnalysisRef.current = true;
       } else {
         setError('No log files found or no data to analyze');
         setAnalysis(null);
+        hasPerformedInitialAnalysisRef.current = true;
       }
     } catch (err) {
       console.error('Analysis error:', err);
@@ -114,6 +122,23 @@ export default function LogView() {
       }
     }
   }, [realTimeEnabled, logDirectory, performAnalysis]);
+
+  // Auto-update when date range changes (only if real-time is disabled)
+  useEffect(() => {
+    // Only trigger if:
+    // 1. Real-time is disabled (to avoid conflicts with interval)
+    // 2. Log directory is set
+    // 3. Initial analysis has been performed (to avoid running on mount)
+    // 4. Either both dates are set, or both are cleared
+    if (
+      !realTimeEnabled &&
+      logDirectory &&
+      hasPerformedInitialAnalysisRef.current &&
+      (dateRange.start || dateRange.end || (!dateRange.start && !dateRange.end))
+    ) {
+      performAnalysis();
+    }
+  }, [dateRange.start, dateRange.end, realTimeEnabled, logDirectory, performAnalysis]);
 
   // Load active days when directory changes
   useEffect(() => {
@@ -572,74 +597,6 @@ export default function LogView() {
                     </tbody>
                   </table>
                 </div>
-              </AccordionContent>
-            </AccordionItem>
-
-            {/* Destroyed Items/Ships */}
-            <AccordionItem value="destroyed" className="border rounded-lg px-4">
-              <AccordionTrigger>Destroyed Items/Ships</AccordionTrigger>
-              <AccordionContent>
-                {Object.values(analysis.characters).some(
-                  (char) => char.shipsDestroyed.length > 0,
-                ) ? (
-                  <div className="space-y-4">
-                    {Object.values(analysis.characters)
-                      .filter((char) => char.shipsDestroyed.length > 0)
-                      .map((char) => (
-                        <div key={char.characterName}>
-                          <h4 className="font-semibold mb-2">
-                            {char.characterName}:
-                          </h4>
-                          <ul className="list-disc list-inside space-y-1">
-                            {char.shipsDestroyed.map((ship, idx) => (
-                              <li key={idx}>{ship}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      ))}
-                    {/* Summary */}
-                    <div className="mt-4 pt-4 border-t">
-                      <h4 className="font-semibold mb-2">Summary:</h4>
-                      <div className="overflow-x-auto">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b">
-                              <th className="text-left p-2">Item/Ship Type</th>
-                              <th className="text-right p-2">Count</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {(() => {
-                              const allDestroyed: Record<string, number> = {};
-                              Object.values(analysis.characters).forEach(
-                                (char) => {
-                                  char.shipsDestroyed.forEach((ship) => {
-                                    allDestroyed[ship] =
-                                      (allDestroyed[ship] || 0) + 1;
-                                  });
-                                },
-                              );
-                              return Object.entries(allDestroyed)
-                                .sort((a, b) => b[1] - a[1])
-                                .map(([item, count]) => (
-                                  <tr key={item} className="border-b">
-                                    <td className="p-2">{item}</td>
-                                    <td className="text-right p-2">
-                                      {count}
-                                    </td>
-                                  </tr>
-                                ));
-                            })()}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <p className="text-muted-foreground">
-                    No destroyed items/ships recorded in logs.
-                  </p>
-                )}
               </AccordionContent>
             </AccordionItem>
 

@@ -81,7 +81,6 @@ export interface CharacterMiningData {
   totalCycles: number;
   critCycles: number;
   totalResidue: number;
-  shipsDestroyed: string[];
 }
 
 export interface OreData {

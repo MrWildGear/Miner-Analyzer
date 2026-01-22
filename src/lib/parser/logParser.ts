@@ -132,7 +132,7 @@ async function extractCharacterName(filePath: string): Promise<string | null> {
 async function identifySessionCharacters(
   directory: string,
   logFiles: LogFileInfo[],
-  dateRange?: { start: Date; end: Date },
+  dateRange?: { start?: Date; end?: Date },
 ): Promise<Set<string>> {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:81',message:'identifySessionCharacters entry',data:{logFilesCount:logFiles.length,hasDateRange:!!dateRange},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
@@ -141,16 +141,27 @@ async function identifySessionCharacters(
 
   let filesToCheck: LogFileInfo[];
 
-  if (dateRange) {
+  if (dateRange && (dateRange.start || dateRange.end)) {
     // When date range is provided, find characters from ALL files in that range
-    const rangeStart = normalizeToStartOfDay(dateRange.start);
-    const rangeEnd = normalizeToEndOfDay(dateRange.end);
+    const rangeStart = dateRange.start
+      ? normalizeToStartOfDay(dateRange.start)
+      : null;
+    const rangeEnd = dateRange.end
+      ? normalizeToEndOfDay(dateRange.end)
+      : null;
     filesToCheck = logFiles.filter((file) => {
       const fileDate = normalizeToStartOfDay(file.mtime);
-      return fileDate >= rangeStart && fileDate <= rangeEnd;
+      if (rangeStart && rangeEnd) {
+        return fileDate >= rangeStart && fileDate <= rangeEnd;
+      } else if (rangeStart) {
+        return fileDate >= rangeStart;
+      } else if (rangeEnd) {
+        return fileDate <= rangeEnd;
+      }
+      return true;
     });
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:95',message:'Using date range for character identification',data:{filesToCheckCount:filesToCheck.length,rangeStart:rangeStart.toISOString(),rangeEnd:rangeEnd.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:95',message:'Using date range for character identification',data:{filesToCheckCount:filesToCheck.length,rangeStart:rangeStart?.toISOString(),rangeEnd:rangeEnd?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'D'})}).catch(()=>{});
     // #endregion
   } else {
     // No date range: use most recent hour (original behavior)
@@ -210,7 +221,7 @@ async function getFilesForDateRange(
   directory: string,
   logFiles: LogFileInfo[],
   sessionCharacters: Set<string>,
-  dateRange?: { start: Date; end: Date },
+  dateRange?: { start?: Date; end?: Date },
 ): Promise<string[]> {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:129',message:'getFilesForDateRange entry',data:{logFilesCount:logFiles.length,sessionCharactersCount:sessionCharacters.size,hasDateRange:!!dateRange,dateRangeStart:dateRange?.start?.toISOString(),dateRangeEnd:dateRange?.end?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
@@ -221,10 +232,14 @@ async function getFilesForDateRange(
   let rangeStart: Date | null = null;
   let rangeEnd: Date | null = null;
   if (dateRange) {
-    rangeStart = normalizeToStartOfDay(dateRange.start);
-    rangeEnd = normalizeToEndOfDay(dateRange.end);
+    if (dateRange.start) {
+      rangeStart = normalizeToStartOfDay(dateRange.start);
+    }
+    if (dateRange.end) {
+      rangeEnd = normalizeToEndOfDay(dateRange.end);
+    }
     // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:137',message:'Date range normalized',data:{rangeStart:rangeStart.toISOString(),rangeEnd:rangeEnd.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+    fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:137',message:'Date range normalized',data:{rangeStart:rangeStart?.toISOString(),rangeEnd:rangeEnd?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
     // #endregion
   }
 
@@ -234,12 +249,25 @@ async function getFilesForDateRange(
 
   for (const file of logFiles) {
     // Filter by date range using file modification date
-    if (dateRange && rangeStart && rangeEnd) {
+    if (dateRange && (rangeStart || rangeEnd)) {
       const fileDate = normalizeToStartOfDay(file.mtime);
-      if (fileDate < rangeStart || fileDate > rangeEnd) {
+      let shouldFilter = false;
+      
+      if (rangeStart && rangeEnd) {
+        // Both dates set: filter if outside range
+        shouldFilter = fileDate < rangeStart || fileDate > rangeEnd;
+      } else if (rangeStart) {
+        // Only start date: filter if before start
+        shouldFilter = fileDate < rangeStart;
+      } else if (rangeEnd) {
+        // Only end date: filter if after end
+        shouldFilter = fileDate > rangeEnd;
+      }
+      
+      if (shouldFilter) {
         dateFilteredCount++;
         // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:148',message:'File filtered by date',data:{fileName:file.name,fileDate:fileDate.toISOString(),rangeStart:rangeStart.toISOString(),rangeEnd:rangeEnd.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+        fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:148',message:'File filtered by date',data:{fileName:file.name,fileDate:fileDate.toISOString(),rangeStart:rangeStart?.toISOString(),rangeEnd:rangeEnd?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
         // #endregion
         continue;
       }
@@ -298,7 +326,6 @@ async function parseLogFile(
         totalCycles: 0,
         critCycles: 0,
         totalResidue: 0,
-        shipsDestroyed: [],
       };
     }
 
@@ -409,17 +436,6 @@ async function parseLogFile(
         oreData[lastMinedOre].residue += amount;
       }
     }
-
-    // Track ship destructions: (combat).*?destroyed.*?([A-Za-z\s]+)\s+belonging to
-    const destroyedPattern =
-      /\(combat\).*?destroyed.*?([A-Za-z\s]+)\s+belonging to/g;
-
-    while ((match = destroyedPattern.exec(content)) !== null) {
-      if (match[1]) {
-        const shipType = match[1].trim();
-        characterData[characterName].shipsDestroyed.push(shipType);
-      }
-    }
   } catch (error) {
     console.error(`Error parsing log file ${fileName}:`, error);
   }
@@ -454,7 +470,7 @@ export function getActiveDays(logFiles: LogFileInfo[]): Date[] {
  */
 export async function analyzeLogs(
   directory: string,
-  dateRange?: { start: Date; end: Date },
+  dateRange?: { start?: Date; end?: Date },
 ): Promise<LogAnalysisResult | null> {
   // #region agent log
   fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:335',message:'analyzeLogs entry',data:{directory,hasDateRange:!!dateRange,dateRangeStart:dateRange?.start?.toISOString(),dateRangeEnd:dateRange?.end?.toISOString()},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
@@ -547,17 +563,38 @@ export async function analyzeLogs(
     );
     const activeDays = getActiveDays(processedFileInfos);
 
-    // Determine date range from files if not provided
-    let finalDateRange = dateRange;
-    if (!finalDateRange && activeDays.length > 0) {
+    // Determine date range from files if not provided or partially provided
+    let finalDateRange: { start: Date; end: Date };
+    if (dateRange && dateRange.start && dateRange.end) {
+      // Both dates provided
+      finalDateRange = {
+        start: dateRange.start,
+        end: dateRange.end,
+      };
+    } else if (dateRange && dateRange.start) {
+      // Only start date provided - use last active day as end
+      finalDateRange = {
+        start: dateRange.start,
+        end: activeDays.length > 0 ? activeDays[activeDays.length - 1] : dateRange.start,
+      };
+    } else if (dateRange && dateRange.end) {
+      // Only end date provided - use first active day as start
+      finalDateRange = {
+        start: activeDays.length > 0 ? activeDays[0] : dateRange.end,
+        end: dateRange.end,
+      };
+    } else if (activeDays.length > 0) {
+      // No date range provided - use all active days
       finalDateRange = {
         start: activeDays[0],
         end: activeDays[activeDays.length - 1],
       };
-    } else if (!finalDateRange) {
+    } else {
+      // Fallback to current date
+      const today = new Date();
       finalDateRange = {
-        start: new Date(),
-        end: new Date(),
+        start: today,
+        end: today,
       };
     }
 
