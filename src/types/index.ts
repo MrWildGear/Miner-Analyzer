@@ -90,9 +90,15 @@ export interface OreData {
   residue: number;
 }
 
+export type CharacterOreBreakdown = Record<
+  string,
+  Record<string, { nonCrit: number; crit: number; residue: number }>
+>;
+
 export interface LogAnalysisResult {
   characters: Record<string, CharacterMiningData>;
   oreBreakdown: Record<string, OreData>;
+  characterOreBreakdown: CharacterOreBreakdown;
   dateRange: { start: Date; end: Date };
   activeDays: Date[];
   overall: {

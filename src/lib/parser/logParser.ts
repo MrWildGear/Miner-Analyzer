@@ -3,6 +3,7 @@ import type {
   CharacterMiningData,
   OreData,
   LogAnalysisResult,
+  CharacterOreBreakdown,
 } from '@/types';
 
 const LOG_FILE_PATTERN = /^\d{8}_\d{6}(_\d+)?\.txt$/;
@@ -295,6 +296,24 @@ async function getFilesForDateRange(
   return filteredFiles;
 }
 
+function ensureCharOre(
+  characterOreBreakdown: CharacterOreBreakdown,
+  characterName: string,
+  oreName: string,
+): { nonCrit: number; crit: number; residue: number } {
+  if (!characterOreBreakdown[characterName]) {
+    characterOreBreakdown[characterName] = {};
+  }
+  if (!characterOreBreakdown[characterName][oreName]) {
+    characterOreBreakdown[characterName][oreName] = {
+      nonCrit: 0,
+      crit: 0,
+      residue: 0,
+    };
+  }
+  return characterOreBreakdown[characterName][oreName];
+}
+
 /**
  * Parse a single log file and extract mining data
  */
@@ -303,6 +322,7 @@ async function parseLogFile(
   fileName: string,
   characterData: Record<string, CharacterMiningData>,
   oreData: Record<string, OreData>,
+  characterOreBreakdown: CharacterOreBreakdown,
 ): Promise<void> {
   try {
     const filePath = `${directory}/${fileName}`;
@@ -355,6 +375,9 @@ async function parseLogFile(
           };
         }
         oreData[oreName].nonCrit += amount;
+
+        const charOre = ensureCharOre(characterOreBreakdown, characterName, oreName);
+        charOre.nonCrit += amount;
         // #region agent log
         fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:303',message:'Regular mining match',data:{fileName,characterName,amount,oreName},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'F'})}).catch(()=>{});
         // #endregion
@@ -391,6 +414,9 @@ async function parseLogFile(
           };
         }
         oreData[oreName].crit += amount;
+
+        const charOre = ensureCharOre(characterOreBreakdown, characterName, oreName);
+        charOre.crit += amount;
       }
     }
 
@@ -434,6 +460,9 @@ async function parseLogFile(
           };
         }
         oreData[lastMinedOre].residue += amount;
+
+        const charOre = ensureCharOre(characterOreBreakdown, characterName, lastMinedOre);
+        charOre.residue += amount;
       }
     }
   } catch (error) {
@@ -525,12 +554,13 @@ export async function analyzeLogs(
     // Parse all files
     const characterData: Record<string, CharacterMiningData> = {};
     const oreData: Record<string, OreData> = {};
+    const characterOreBreakdown: CharacterOreBreakdown = {};
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:484',message:'Starting to parse files',data:{filesToProcessCount:filesToProcess.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
     // #endregion
 
     for (const file of filesToProcess) {
-      await parseLogFile(directory, file, characterData, oreData);
+      await parseLogFile(directory, file, characterData, oreData, characterOreBreakdown);
     }
     // #region agent log
     fetch('http://127.0.0.1:7242/ingest/512e6178-7b24-4d54-9a68-76b71265f9bc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'logParser.ts:490',message:'Finished parsing files',data:{charactersCount:Object.keys(characterData).length,oresCount:Object.keys(oreData).length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
@@ -604,6 +634,7 @@ export async function analyzeLogs(
     return {
       characters: characterData,
       oreBreakdown: oreData,
+      characterOreBreakdown,
       dateRange: finalDateRange,
       activeDays,
       overall: {
