@@ -14,7 +14,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
-import { analyzeLogs, getActiveDays, findLogFiles } from '@/lib/parser/logParser';
+import { invoke } from '@tauri-apps/api/core';
 import {
   getLogDirectory,
   saveLogDirectory,
@@ -157,16 +157,28 @@ export default function LogView() {
       const dateRangeToUse =
         dateRange.start || dateRange.end
           ? {
-              start: dateRange.start,
-              end: dateRange.end,
+              start: dateRange.start?.toISOString(),
+              end: dateRange.end?.toISOString(),
             }
           : undefined;
 
-      const result = await analyzeLogs(logDirectory, dateRangeToUse);
+      const result = await invoke<LogAnalysisResult | null>('analyze_logs_command', {
+        directory: logDirectory,
+        dateRange: dateRangeToUse,
+      });
 
       if (result) {
-        setAnalysis(result);
-        setActiveDays(result.activeDays);
+        // Convert date strings back to Date objects
+        const convertedResult: LogAnalysisResult = {
+          ...result,
+          dateRange: {
+            start: new Date(result.dateRange.start),
+            end: new Date(result.dateRange.end),
+          },
+          activeDays: result.activeDays.map((d: string) => new Date(d)),
+        };
+        setAnalysis(convertedResult);
+        setActiveDays(convertedResult.activeDays);
         setLastUpdate(new Date());
         lastReadTimeRef.current = Date.now();
         hasPerformedInitialAnalysisRef.current = true;
@@ -233,8 +245,10 @@ export default function LogView() {
       if (!logDirectory) return;
 
       try {
-        const files = await findLogFiles(logDirectory);
-        const days = getActiveDays(files);
+        const dateStrings = await invoke<string[]>('get_active_days_command', {
+          directory: logDirectory,
+        });
+        const days = dateStrings.map((d) => new Date(d));
         setActiveDays(days);
       } catch (err) {
         console.error('Error loading active days:', err);
